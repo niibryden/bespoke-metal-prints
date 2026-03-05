@@ -1,0 +1,7 @@
+Line to replace:
+console.log(`📋 [STATS] Successfully fetched ${allOrders.length} recent orders (errors: ${totalErrors})`);\\n    \\n    // Filter by period date range
+
+Should become:
+console.log(`📋 [STATS] Successfully fetched ${allOrders.length} recent orders (errors: ${totalErrors})`);
+    
+    // Filter by period date range

@@ -1,0 +1,39 @@
+# robots.txt for Bespoke Metal Prints
+
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /admin-dashboard
+
+# Disallow any API routes
+Disallow: /api/
+Disallow: /functions/
+
+# Allow access to important pages
+Allow: /
+Allow: /gallery
+Allow: /configurator
+Allow: /tracking
+Allow: /shipping-policy
+Allow: /refund-policy
+Allow: /privacy-policy
+
+# Sitemap location
+Sitemap: https://bespokemetalprints.com/sitemap.xml
+
+# Crawl-delay for respectful crawling (optional)
+Crawl-delay: 1
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /

@@ -1,0 +1,22 @@
+CORRUPTED LINE 1183 IN index.tsx:
+
+console.log(`📋 [STATS] Successfully fetched ${allOrders.length} recent orders (errors: ${totalErrors})`));\\n    \\n    // Filter by period date range
+
+SHOULD BE REPLACED WITH:
+
+console.log(`📋 [STATS] Successfully fetched ${allOrders.length} recent orders (errors: ${totalErrors})`);
+
+MANUAL FIX REQUIRED IN SUPABASE DASHBOARD:
+1. Open /supabase/functions/server/index.tsx in Supabase dashboard
+2. Go to line 1183
+3. Delete everything after the closing parenthesis `)` and backtick `
+4. The line should end with: `)`);
+5. Delete line 1184 (extra blank line)
+6. Delete duplicate line 1185 ("// Filter by period date range")
+7. Save and deploy
+
+After fix, line 1183 should be:
+console.log(`📋 [STATS] Successfully fetched ${allOrders.length} recent orders (errors: ${totalErrors})`);
+
+Followed by blank line, then:
+// Filter by period date range

@@ -1,0 +1,12 @@
+      }
+    }
+    
+    console.log(`📋 [STATS] Successfully fetched ${allOrders.length} recent orders (errors: ${totalErrors})`);
+    
+    // Filter by period date range
+    const filteredOrders = allOrders.filter((order: any) => {
+      const orderDate = new Date(order.createdAt);
+      return orderDate >= startDate;
+    });
+    
+    // Calculate stats

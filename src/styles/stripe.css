@@ -1,0 +1,48 @@
+/* Stripe Payment Element Custom Styles */
+.stripe-payment-element {
+  /* Ensure the Payment Element inherits the dark theme */
+}
+
+/* Hide Stripe branding badge */
+.__PrivateStripeElement iframe {
+  display: block !important;
+}
+
+/* Hide "Powered by Stripe" link/badge */
+a[href*="stripe.com"] {
+  display: none !important;
+}
+
+/* Hide Stripe badge container */
+.stripe-badge,
+[class*="StripeBadge"],
+[class*="stripe-badge"] {
+  display: none !important;
+}
+
+/* Override Stripe's default styling to match our theme */
+.StripeElement {
+  background-color: #0a0a0a !important;
+  border: 1px solid rgba(255, 107, 53, 0.2) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+.StripeElement--focus {
+  border-color: #ff6b35 !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1) !important;
+}
+
+.StripeElement--invalid {
+  border-color: #ef4444 !important;
+}
+
+.StripeElement--webkit-autofill {
+  background-color: #0a0a0a !important;
+}
+
+/* Light theme overrides */
+[data-theme='light'] .stripe-payment-element .StripeElement {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}

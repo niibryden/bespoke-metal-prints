@@ -316,7 +316,11 @@ checkoutApp.post('/make-server-3e3a9cd7/create-order', async (c) => {
       paymentIntentId: paymentIntentId,
       customerEmail: customerEmail,
       shippingAddress: shippingAddress,
-      orderDetails: orderDetails,
+      orderDetails: {
+        ...orderDetails,
+        imageUrl: imageUrl || null, // Store image URL in orderDetails for admin panel
+        image: imageUrl || null, // Also store in 'image' field for backward compatibility
+      },
       amount: amount,
       basePrice: basePrice,
       shippingRate: shippingRate,
@@ -324,7 +328,7 @@ checkoutApp.post('/make-server-3e3a9cd7/create-order', async (c) => {
       discount: discount || null,
       smsConsent: smsConsent || false, // Save SMS consent preference
       smsPhone: smsPhone, // Save phone number for SMS (only if consent given)
-      imageUrl: imageUrl || null, // Store print-ready image URL
+      imageUrl: imageUrl || null, // Also store at root level for webhook compatibility
       status: 'pending',
       paymentStatus: 'pending',
       createdAt: new Date().toISOString(),
@@ -555,6 +559,7 @@ checkoutApp.post('/make-server-3e3a9cd7/update-order', async (c) => {
       
       order.orderDetails.imageUrl = imageUrl;
       order.orderDetails.image = imageUrl; // Also store in 'image' field for backward compatibility
+      order.imageUrl = imageUrl; // Also store at root level for consistency
       order.updatedAt = new Date().toISOString();
       
       console.log(`✅ Updated order ${orderId} with image URL: ${imageUrl.substring(0, 80)}...`);

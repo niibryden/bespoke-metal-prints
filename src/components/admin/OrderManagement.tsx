@@ -1203,7 +1203,7 @@ export function OrderManagement({ adminInfo }: { adminInfo?: { email: string; ro
               </div>
 
               {/* Download Print-Ready Image - Prominent Button */}
-              {(selectedOrder.orderDetails?.image || selectedOrder.orderDetails?.imageUrl || selectedOrder.orderDetails?.imageStoredSeparately) && (
+              {(selectedOrder.orderDetails?.image || selectedOrder.orderDetails?.imageUrl || selectedOrder.orderDetails?.imageStoredSeparately || selectedOrder.imageUrl) && (
                 <div className="p-4 bg-[#ff6b35]/10 border-2 border-[#ff6b35] rounded-lg">
                   <div className="flex items-center justify-between mb-3">
                     <div>
@@ -1217,7 +1217,7 @@ export function OrderManagement({ adminInfo }: { adminInfo?: { email: string; ro
                   </div>
                   <button
                     onClick={async () => {
-                      const imageData = selectedOrder.orderDetails.image || selectedOrder.orderDetails.imageUrl;
+                      const imageData = selectedOrder.orderDetails.image || selectedOrder.orderDetails.imageUrl || selectedOrder.imageUrl;
                       console.log('🖨️ Downloading print-ready image');
                       console.log('Order ID:', selectedOrder.id);
                       console.log('Print Size:', selectedOrder.orderDetails.size);
@@ -1301,7 +1301,7 @@ export function OrderManagement({ adminInfo }: { adminInfo?: { email: string; ro
               )}
 
               {/* Debug: Show if no image found */}
-              {!selectedOrder.orderDetails?.image && !selectedOrder.orderDetails?.imageUrl && !selectedOrder.orderDetails?.imageStoredSeparately && (
+              {!selectedOrder.orderDetails?.image && !selectedOrder.orderDetails?.imageUrl && !selectedOrder.orderDetails?.imageStoredSeparately && !selectedOrder.imageUrl && (
                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                   <p className="text-sm font-medium text-yellow-500 mb-2">
                     ⚠️ No Print-Ready Image Found

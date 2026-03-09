@@ -146,8 +146,8 @@ export function HeroSection() {
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
-                  className="text-center lg:text-left bg-white/30 dark:bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/30 dark:border-white/10"
-                  whileHover={{ scale: 1.05, y: -5, backgroundColor: 'rgba(255, 107, 53, 0.1)' }}
+                  className="text-center lg:text-left bg-white/30 dark:bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-gray-200/30 dark:border-white/10 hover:bg-[rgba(255,107,53,0.1)] transition-colors"
+                  whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <div className="flex items-center justify-center lg:justify-start gap-2 mb-1">

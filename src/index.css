@@ -2386,6 +2386,10 @@
     }
   }
 
+  .bg-purple-600 {
+    background-color: var(--color-purple-600);
+  }
+
   .bg-red-50 {
     background-color: var(--color-red-50);
   }
@@ -3724,6 +3728,10 @@
     color: var(--color-yellow-800);
   }
 
+  .text-yellow-900 {
+    color: var(--color-yellow-900);
+  }
+
   .capitalize {
     text-transform: capitalize;
   }
@@ -4406,6 +4414,12 @@
   }
 
   @media (hover: hover) {
+    .hover\:bg-\[rgba\(255\,107\,53\,0\.1\)\]:hover {
+      background-color: #ff6b351a;
+    }
+  }
+
+  @media (hover: hover) {
     .hover\:bg-black\/10:hover {
       background-color: #0000001a;
     }
@@ -4510,6 +4524,12 @@
   @media (hover: hover) {
     .hover\:bg-orange-700:hover {
       background-color: var(--color-orange-700);
+    }
+  }
+
+  @media (hover: hover) {
+    .hover\:bg-purple-700:hover {
+      background-color: var(--color-purple-700);
     }
   }
 
@@ -6297,11 +6317,11 @@ a[href*="stripe.com"], .stripe-badge, [class*="StripeBadge"], [class*="stripe-ba
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: #ff6b35;
-  --chart-1: oklch(.646 .222 41.116);
-  --chart-2: oklch(.6 .118 184.704);
-  --chart-3: oklch(.398 .07 227.392);
-  --chart-4: oklch(.828 .189 84.429);
-  --chart-5: oklch(.769 .188 70.08);
+  --chart-1: #ff6b35;
+  --chart-2: #4299e1;
+  --chart-3: #2d3748;
+  --chart-4: #fbbf24;
+  --chart-5: #f59e0b;
   --radius: .625rem;
   --sidebar: #fff;
   --sidebar-foreground: #0a0a0a;

@@ -2636,6 +2636,101 @@ adminApp.post('/make-server-3e3a9cd7/admin/strip-base64-images', async (c) => {
   }
 });
 
+// Migrate imageUrl structure for existing orders
+adminApp.post('/make-server-3e3a9cd7/admin/migrate-image-urls', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    console.log('🔄 Starting imageUrl migration...');
+    
+    // Get all orders
+    const orders = await kv.getByPrefix('order:');
+    console.log(`📊 Found ${orders.length} orders to scan`);
+
+    let ordersScanned = 0;
+    let ordersMigrated = 0;
+    let ordersAlreadyCorrect = 0;
+    let ordersNoImage = 0;
+    const errors: string[] = [];
+
+    for (const order of orders) {
+      try {
+        ordersScanned++;
+        
+        // Validate order has an ID
+        if (!order.id) {
+          console.warn(`⚠️ Order without ID found, skipping`);
+          errors.push(`Order without ID found`);
+          continue;
+        }
+        
+        // Check if order has imageUrl at root level but not in orderDetails
+        const hasRootImageUrl = !!order.imageUrl;
+        const hasOrderDetailsImageUrl = !!order.orderDetails?.imageUrl || !!order.orderDetails?.image;
+        
+        if (!hasRootImageUrl && !hasOrderDetailsImageUrl) {
+          // No image URL found anywhere
+          ordersNoImage++;
+          continue;
+        }
+        
+        if (hasRootImageUrl && !hasOrderDetailsImageUrl) {
+          // Need to migrate: root imageUrl exists but not in orderDetails
+          if (!order.orderDetails) {
+            order.orderDetails = {};
+          }
+          
+          order.orderDetails.imageUrl = order.imageUrl;
+          order.orderDetails.image = order.imageUrl;
+          
+          await kv.set(`order:${order.id}`, order);
+          ordersMigrated++;
+          console.log(`  ✓ Migrated order ${order.id}: ${order.imageUrl.substring(0, 60)}...`);
+        } else if (!hasRootImageUrl && hasOrderDetailsImageUrl) {
+          // Reverse migration: orderDetails has image but root doesn't
+          const imageUrl = order.orderDetails.imageUrl || order.orderDetails.image;
+          order.imageUrl = imageUrl;
+          
+          await kv.set(`order:${order.id}`, order);
+          ordersMigrated++;
+          console.log(`  ✓ Reverse migrated order ${order.id}: ${imageUrl.substring(0, 60)}...`);
+        } else {
+          // Already has imageUrl in both places
+          ordersAlreadyCorrect++;
+        }
+      } catch (orderError: any) {
+        const errorMsg = `Error processing order ${order.id}: ${orderError.message}`;
+        console.error(`❌ ${errorMsg}`);
+        errors.push(errorMsg);
+      }
+    }
+
+    console.log(`✅ Migration complete:
+      - Orders scanned: ${ordersScanned}
+      - Orders migrated: ${ordersMigrated}
+      - Orders already correct: ${ordersAlreadyCorrect}
+      - Orders with no image: ${ordersNoImage}
+      - Errors: ${errors.length}`);
+
+    return c.json({
+      success: true,
+      stats: {
+        ordersScanned,
+        ordersMigrated,
+        ordersAlreadyCorrect,
+        ordersNoImage,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Migrate imageUrl error:', error);
+    return c.json({ error: 'Failed to migrate imageUrls', details: error.message }, 500);
+  }
+});
+
 // Export orders as CSV
 adminApp.get('/make-server-3e3a9cd7/admin/export/orders', async (c) => {
   const auth = await verifyAdmin(c.req.header('Authorization'));

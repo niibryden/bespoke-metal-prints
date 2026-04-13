@@ -1,0 +1,155 @@
+index-BSjNqx_4.js:605 🛠️ Optimization tools loaded! Type window.optimizationTools.help() for commands
+index-BSjNqx_4.js:605 ✅ JWT validation passed: Object
+index-BSjNqx_4.js:49 📦 Loaded 0 items from cart (0.00 KB)
+index-BSjNqx_4.js:543 🔄 Fetching testimonials from: https://shspfbpqdctargcjhnke.supabase.co/functions/v1/make-server-3e3a9cd7/testimonials?_t=1776113751321
+index-BSjNqx_4.js:544 📱 Mobile detection: DESKTOP (width: 1920px)
+index-BSjNqx_4.js:544 📦 Fetching inventory from: https://shspfbpqdctargcjhnke.supabase.co/functions/v1/make-server-3e3a9cd7/inventory
+index-BSjNqx_4.js:544 ✅ ConfiguratorSection: Ready - Event listener registered for reorder
+index-BSjNqx_4.js:544 ✅ ConfiguratorSection: Ready - Event listener registered for stock-image-selected
+index-BSjNqx_4.js:49 💾 Cart saved to localStorage: 0 items (0.00 KB)
+index-BSjNqx_4.js:605 🧹 Checking cart data on startup: 0.00 KB
+index-BSjNqx_4.js:544 📊 Initializing performance monitoring...
+index-BSjNqx_4.js:544 🟢 TTFB: 103ms
+index-BSjNqx_4.js:605 ℹ️ Service worker not available: Failed to register a ServiceWorker for scope ('https://bespokemetalprints.com/') with script ('https://bespokemetalprints.com/service-worker.js'): A bad HTTP response code (404) was received when fetching the script.
+index-BSjNqx_4.js:543 📥 Testimonials response status: 200
+index-BSjNqx_4.js:543 📥 Testimonials response headers: Object
+index-BSjNqx_4.js:544 🟢 TTI: -77ms
+index-BSjNqx_4.js:544 📦 Merged sizes (with inventory data): 5" × 7" (IN STOCK), 12" × 8" (IN STOCK), 17" × 11" (OUT OF STOCK), 24" × 16" (OUT OF STOCK), 30" × 20" (OUT OF STOCK), 36" × 24" (OUT OF STOCK), 40" × 30" (OUT OF STOCK)
+index-BSjNqx_4.js:544 ✅ Found and selecting 8x12: 12" × 8"
+index-BSjNqx_4.js:543 ✅ Testimonials data received: Object
+index-BSjNqx_4.js:543 ✅ Using 4 live testimonials from database
+index-BSjNqx_4.js:544 📦 Inventory loaded: 19 items
+index-BSjNqx_4.js:544   First 3 items: Array(3)
+AdminDashboard-BFgzLzpu.js:227 ✅ AdminDashboard - tabs after filter: Array(8)
+AdminDashboard-BFgzLzpu.js:227 ✅ AdminDashboard - adminInfo.permissions: Object
+index-BSjNqx_4.js:544 ConfiguratorSection: Cleanup - Removing reorder listener
+index-BSjNqx_4.js:544 ConfiguratorSection: Cleanup - Removing event listener
+AdminDashboard-BFgzLzpu.js:165 📊 ===== OVERVIEW TAB: FETCHING FROM ORDERS ENDPOINT =====
+AdminDashboard-BFgzLzpu.js:165 📊 URL: https://shspfbpqdctargcjhnke.supabase.co/functions/v1/make-server-3e3a9cd7/admin/orders?limit=100&offset=0&t=1776113754212
+AdminDashboard-BFgzLzpu.js:165 📊 Period filter: month
+AdminDashboard-BFgzLzpu.js:165 📊 This is the SAME endpoint the Orders tab uses
+AdminDashboard-BFgzLzpu.js:165 📊 Auth Token: Present
+AdminDashboard-BFgzLzpu.js:165 📊 Token length: 781
+AdminDashboard-BFgzLzpu.js:165 📊 Token preview: eyJhbGciOiJIUzI1NiIsImtpZCI6Ik...
+AdminDashboard-BFgzLzpu.js:165 📊 ProjectId: shspfbpqdctargcjhnke
+AdminDashboard-BFgzLzpu.js:165 📊 ===== OVERVIEW TAB: FETCHING FROM ORDERS ENDPOINT =====
+AdminDashboard-BFgzLzpu.js:165 📊 URL: https://shspfbpqdctargcjhnke.supabase.co/functions/v1/make-server-3e3a9cd7/admin/orders?limit=100&offset=0&t=1776113754224
+AdminDashboard-BFgzLzpu.js:165 📊 Period filter: month
+AdminDashboard-BFgzLzpu.js:165 📊 This is the SAME endpoint the Orders tab uses
+AdminDashboard-BFgzLzpu.js:165 📊 Auth Token: Present
+AdminDashboard-BFgzLzpu.js:165 📊 Token length: 781
+AdminDashboard-BFgzLzpu.js:165 📊 Token preview: eyJhbGciOiJIUzI1NiIsImtpZCI6Ik...
+AdminDashboard-BFgzLzpu.js:165 📊 ProjectId: shspfbpqdctargcjhnke
+index-BSjNqx_4.js:544 🔴 LCP: 5676ms
+AdminDashboard-BFgzLzpu.js:165 📊 ========== ORDERS DATA (SOURCE OF TRUTH) ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Total orders loaded: 25
+AdminDashboard-BFgzLzpu.js:165 📊 Sample orders: Array(3)
+AdminDashboard-BFgzLzpu.js:165 📊 ========== DATE FILTER ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Cutoff date: 2025-12-01T00:00:00.000Z
+AdminDashboard-BFgzLzpu.js:165 📊 Orders before filtering: 25
+AdminDashboard-BFgzLzpu.js:165 📊 Orders from Dec 2025 onwards: 25
+AdminDashboard-BFgzLzpu.js:165 📊 Excluded (before Dec 2025): 0
+AdminDashboard-BFgzLzpu.js:165 📊 ========== PERIOD FILTER ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Selected period: month
+AdminDashboard-BFgzLzpu.js:165 📊 Period start: 2026-04-01T04:00:00.000Z
+AdminDashboard-BFgzLzpu.js:165 📊 Orders in period: 2
+AdminDashboard-BFgzLzpu.js:165 📊 Excluded (outside period): 23
+AdminDashboard-BFgzLzpu.js:165 📊 ========== STATUS FILTER ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Orders in period: 2
+AdminDashboard-BFgzLzpu.js:165 📊 Status breakdown: Object
+AdminDashboard-BFgzLzpu.js:165 📊 Valid statuses (completed orders): Array(6)
+AdminDashboard-BFgzLzpu.js:165 📊 After excluding incomplete/cancelled: 1
+AdminDashboard-BFgzLzpu.js:165 📊 ========== ORDERS DATA (SOURCE OF TRUTH) ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Total orders loaded: 25
+AdminDashboard-BFgzLzpu.js:165 📊 Sample orders: Array(3)
+AdminDashboard-BFgzLzpu.js:165 📊 ========== DATE FILTER ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Cutoff date: 2025-12-01T00:00:00.000Z
+AdminDashboard-BFgzLzpu.js:165 📊 Orders before filtering: 25
+AdminDashboard-BFgzLzpu.js:165 📊 Orders from Dec 2025 onwards: 25
+AdminDashboard-BFgzLzpu.js:165 📊 Excluded (before Dec 2025): 0
+AdminDashboard-BFgzLzpu.js:165 📊 ========== PERIOD FILTER ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Selected period: month
+AdminDashboard-BFgzLzpu.js:165 📊 Period start: 2026-04-01T04:00:00.000Z
+AdminDashboard-BFgzLzpu.js:165 📊 Orders in period: 2
+AdminDashboard-BFgzLzpu.js:165 📊 Excluded (outside period): 23
+AdminDashboard-BFgzLzpu.js:165 📊 ========== STATUS FILTER ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Orders in period: 2
+AdminDashboard-BFgzLzpu.js:165 📊 Status breakdown: Object
+AdminDashboard-BFgzLzpu.js:165 📊 Valid statuses (completed orders): Array(6)
+AdminDashboard-BFgzLzpu.js:165 📊 After excluding incomplete/cancelled: 1
+AdminDashboard-BFgzLzpu.js:165 📊 ========== CALCULATED STATS ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Total Valid Orders: 1
+AdminDashboard-BFgzLzpu.js:165 📊 Revenue (from paid/shipped/delivered orders): $57.46
+AdminDashboard-BFgzLzpu.js:165 📊 Customers: 1 (0 returning)
+AdminDashboard-BFgzLzpu.js:165 📊 Average Order Value: $57.46
+AdminDashboard-BFgzLzpu.js:165 📊 Order Status Breakdown: Object
+AdminDashboard-BFgzLzpu.js:165 📊 Stock Photos: 4
+AdminDashboard-BFgzLzpu.js:165 📊 =====================================
+index-BSjNqx_4.js:544 🟢 CLS: 0ms
+index-BSjNqx_4.js:544 🔴 LCP: 8360ms
+AdminDashboard-BFgzLzpu.js:165 📊 ========== CALCULATED STATS ==========
+AdminDashboard-BFgzLzpu.js:165 📊 Total Valid Orders: 1
+AdminDashboard-BFgzLzpu.js:165 📊 Revenue (from paid/shipped/delivered orders): $57.46
+AdminDashboard-BFgzLzpu.js:165 📊 Customers: 1 (0 returning)
+AdminDashboard-BFgzLzpu.js:165 📊 Average Order Value: $57.46
+AdminDashboard-BFgzLzpu.js:165 📊 Order Status Breakdown: Object
+AdminDashboard-BFgzLzpu.js:165 📊 Stock Photos: 4
+AdminDashboard-BFgzLzpu.js:165 📊 =====================================
+index-BSjNqx_4.js:544 🔴 LCP: 8708ms
+index-BSjNqx_4.js:544 📊 Final Performance Metrics: Object
+index-BSjNqx_4.js:544 Object
+AdminDashboard-BFgzLzpu.js:227 ✅ AdminDashboard - tabs after filter: Array(8)
+AdminDashboard-BFgzLzpu.js:227 ✅ AdminDashboard - adminInfo.permissions: Object
+AdminDashboard-BFgzLzpu.js:165 Fetching collections from: https://shspfbpqdctargcjhnke.supabase.co/functions/v1/make-server-3e3a9cd7/admin/collections
+index-BSjNqx_4.js:544 🟢 CLS: 0ms
+index-BSjNqx_4.js:544 🟢 FID: 5ms
+AdminDashboard-BFgzLzpu.js:165 Collections fetched: Array(3)
+index-BSjNqx_4.js:544 🟢 CLS: 0ms
+AdminDashboard-BFgzLzpu.js:165 Failed to delete photo: TypeError: Cannot read properties of undefined (reading 'replace')
+    at v (AdminDashboard-BFgzLzpu.js:165:66720)
+    at onClick (AdminDashboard-BFgzLzpu.js:184:10551)
+    at Object.yn (index-BSjNqx_4.js:38:9836)
+    at Ia (index-BSjNqx_4.js:38:9992)
+    at Jo (index-BSjNqx_4.js:38:10049)
+    at pm (index-BSjNqx_4.js:38:31409)
+    at mm (index-BSjNqx_4.js:38:31826)
+    at index-BSjNqx_4.js:38:36964
+    at qd (index-BSjNqx_4.js:41:37342)
+    at ct (index-BSjNqx_4.js:38:8973)
+v @ AdminDashboard-BFgzLzpu.js:165
+onClick @ AdminDashboard-BFgzLzpu.js:184
+yn @ index-BSjNqx_4.js:38
+Ia @ index-BSjNqx_4.js:38
+Jo @ index-BSjNqx_4.js:38
+pm @ index-BSjNqx_4.js:38
+mm @ index-BSjNqx_4.js:38
+(anonymous) @ index-BSjNqx_4.js:38
+qd @ index-BSjNqx_4.js:41
+ct @ index-BSjNqx_4.js:38
+qu @ index-BSjNqx_4.js:38
+Tu @ index-BSjNqx_4.js:38
+d1 @ index-BSjNqx_4.js:38
+AdminDashboard-BFgzLzpu.js:165 Failed to delete collection: TypeError: Cannot read properties of undefined (reading 'replace')
+    at w (AdminDashboard-BFgzLzpu.js:165:67471)
+    at onClick (AdminDashboard-BFgzLzpu.js:184:8697)
+    at Object.yn (index-BSjNqx_4.js:38:9836)
+    at Ia (index-BSjNqx_4.js:38:9992)
+    at Jo (index-BSjNqx_4.js:38:10049)
+    at pm (index-BSjNqx_4.js:38:31409)
+    at mm (index-BSjNqx_4.js:38:31826)
+    at index-BSjNqx_4.js:38:36964
+    at qd (index-BSjNqx_4.js:41:37342)
+    at ct (index-BSjNqx_4.js:38:8973)
+w @ AdminDashboard-BFgzLzpu.js:165
+onClick @ AdminDashboard-BFgzLzpu.js:184
+yn @ index-BSjNqx_4.js:38
+Ia @ index-BSjNqx_4.js:38
+Jo @ index-BSjNqx_4.js:38
+pm @ index-BSjNqx_4.js:38
+mm @ index-BSjNqx_4.js:38
+(anonymous) @ index-BSjNqx_4.js:38
+qd @ index-BSjNqx_4.js:41
+ct @ index-BSjNqx_4.js:38
+qu @ index-BSjNqx_4.js:38
+Tu @ index-BSjNqx_4.js:38
+d1 @ index-BSjNqx_4.js:38

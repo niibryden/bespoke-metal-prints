@@ -1132,13 +1132,38 @@ adminApp.delete('/make-server-3e3a9cd7/admin/collections/:collectionId', async (
 
   try {
     const collectionId = c.req.param('collectionId');
+    console.log('🗑️ DELETE COLLECTION - Received request:', {
+      collectionId,
+      type: typeof collectionId,
+    });
+    
     const collections = await kv.get('stock:collections') || [];
-    const filtered = collections.filter((col: any) => col.id !== collectionId);
+    console.log('📦 Current collections:', {
+      total: collections.length,
+      ids: collections.map((col: any) => ({ id: col.id, name: col.name, type: typeof col.id })),
+    });
+    
+    // Filter with type coercion (handle both string and number IDs)
+    const filtered = collections.filter((col: any) => {
+      const match = col.id !== collectionId && 
+                    col.id !== Number(collectionId) && 
+                    String(col.id) !== collectionId;
+      console.log(`  Comparing: "${col.id}" (${typeof col.id}) !== "${collectionId}" (${typeof collectionId}) = ${match}`);
+      return match;
+    });
+    
+    console.log('📊 Filter result:', {
+      before: collections.length,
+      after: filtered.length,
+      removed: collections.length - filtered.length,
+    });
+    
     await kv.set('stock:collections', filtered);
+    console.log('✅ Collections saved');
     
     return c.json({ success: true });
   } catch (error: any) {
-    console.error('Failed to delete collection:', error);
+    console.error('❌ Failed to delete collection:', error);
     return c.json({ error: 'Failed to delete collection' }, 500);
   }
 });
@@ -1325,6 +1350,84 @@ adminApp.post('/make-server-3e3a9cd7/admin/collections/:collectionId/images', as
       error: 'Failed to upload image', 
       details: error.message 
     }, 500);
+  }
+});
+
+// Delete an image from a collection
+adminApp.delete('/make-server-3e3a9cd7/admin/collections/:collectionId/images/:imageId', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const collectionId = c.req.param('collectionId');
+    const imageId = c.req.param('imageId');
+    
+    console.log('🗑️ DELETE IMAGE - Received request:', {
+      collectionId,
+      imageId,
+      collectionIdType: typeof collectionId,
+      imageIdType: typeof imageId,
+    });
+    
+    const collections = await kv.get('stock:collections') || [];
+    
+    console.log('📦 All collections:', collections.map((col: any) => ({
+      id: col.id,
+      name: col.name,
+      idType: typeof col.id,
+    })));
+    
+    // Try to find collection with type coercion (handle both string and number IDs)
+    const collection = collections.find((col: any) => 
+      col.id === collectionId || 
+      col.id === Number(collectionId) || 
+      String(col.id) === collectionId
+    );
+    
+    if (!collection) {
+      console.log('❌ Collection not found:', collectionId);
+      console.log('Available collection IDs:', collections.map((c: any) => c.id));
+      return c.json({ error: 'Collection not found' }, 404);
+    }
+    
+    console.log('📦 Collection found:', {
+      name: collection.name,
+      imageCount: collection.images?.length || 0,
+    });
+    
+    // Filter out the image - also handle type coercion
+    const originalLength = collection.images?.length || 0;
+    collection.images = (collection.images || []).filter((img: any) => 
+      img.id !== imageId && 
+      img.id !== Number(imageId) && 
+      String(img.id) !== imageId
+    );
+    const newLength = collection.images.length;
+    
+    console.log('📊 Image removal result:', {
+      before: originalLength,
+      after: newLength,
+      removed: originalLength - newLength,
+    });
+    
+    if (originalLength === newLength) {
+      console.log('⚠️ Image not found in collection:', imageId);
+      return c.json({ error: 'Image not found' }, 404);
+    }
+    
+    // Update collection timestamp
+    collection.updatedAt = new Date().toISOString();
+    
+    // Save back to storage
+    await kv.set('stock:collections', collections);
+    console.log('✅ Image deleted successfully');
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('❌ Failed to delete image:', error);
+    return c.json({ error: 'Failed to delete image' }, 500);
   }
 });
 

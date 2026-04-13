@@ -684,8 +684,8 @@ export default function App() {
                     onClose={() => setShowPhotoUpload(false)}
                     onSuccess={() => {
                       setShowPhotoUpload(false);
-                      // Reload dashboard to show the new photo
-                      window.location.reload();
+                      // Notify components to refresh without full page reload
+                      window.dispatchEvent(new Event('photographerPhotosUpdated'));
                     }}
                   />
                 </Suspense>

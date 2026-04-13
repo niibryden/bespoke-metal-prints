@@ -34,6 +34,7 @@ const PRINT_SIZES_AND_PRICES = [
 
 export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [preview, setPreview] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);

@@ -95,8 +95,8 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
         return;
       }
 
-      // Extract just the numeric part of the ID
-      const collectionId = collection.id.replace('collection:', '');
+      // Use the collection ID directly (it's already just the numeric ID)
+      const collectionId = collection.id;
       
       console.log('Deleting photo:', photoId, 'from collection:', collectionId);
 
@@ -146,10 +146,14 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
         return;
       }
 
-      // Extract just the numeric part of the ID
-      const collectionId = collection.id.replace('collection:', '');
+      // Use the collection ID directly (it's already just the numeric ID)
+      const collectionId = collection.id;
       
-      console.log('Deleting collection:', collectionId);
+      console.log('🗑️ Deleting collection:', {
+        name: collectionName,
+        id: collectionId,
+        url: `${serverUrl}/admin/collections/${collectionId}`,
+      });
 
       const response = await fetch(
         `${serverUrl}/admin/collections/${collectionId}`,
@@ -161,8 +165,14 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
         }
       );
 
+      console.log('🔍 Delete response:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+      });
+
       if (response.ok) {
-        console.log('Collection deleted successfully');
+        console.log('✅ Collection deleted successfully');
         
         // If the deleted collection was selected, clear selection
         if (selectedCollection === collectionName) {
@@ -175,13 +185,26 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
         // Refresh collections
         await fetchCollections();
       } else {
-        const error = await response.json();
-        console.error('Delete failed:', error);
-        alert(`Failed to delete collection: ${error.error || 'Unknown error'}`);
+        const errorText = await response.text();
+        console.error('❌ Delete failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        
+        let errorMessage = 'Unknown error';
+        try {
+          const error = JSON.parse(errorText);
+          errorMessage = error.error || error.message || errorText;
+        } catch {
+          errorMessage = errorText || 'Unknown error';
+        }
+        
+        alert(`Failed to delete collection: ${errorMessage}`);
       }
     } catch (error) {
-      console.error('Failed to delete collection:', error);
-      alert('Failed to delete collection. Please try again.');
+      console.error('❌ Failed to delete collection:', error);
+      alert(`Failed to delete collection. Please try again. Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDeletingCollectionId(null);
     }
@@ -436,8 +459,8 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
         return;
       }
 
-      // Extract just the numeric part of the ID
-      const collectionId = collection.id.replace('collection:', '');
+      // Use the collection ID directly (it's already just the numeric ID)
+      const collectionId = collection.id;
       
       console.log('Deleting selected photos from collection:', collectionId);
 
@@ -709,15 +732,15 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                           className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                         >
                           {isDeletingMultiple ? (
-                            <>
+                            <span className="flex items-center gap-2">
                               <Loader className="w-4 h-4 animate-spin" />
                               Deleting {selectedPhotos.size}...
-                            </>
+                            </span>
                           ) : (
-                            <>
+                            <span className="flex items-center gap-2">
                               <Trash2 className="w-4 h-4" />
                               Delete {selectedPhotos.size} Selected
-                            </>
+                            </span>
                           )}
                         </button>
                       )}
@@ -727,15 +750,15 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                         className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
                         {deletingCollectionId === selectedCollectionData.name ? (
-                          <>
+                          <span className="flex items-center gap-2">
                             <Loader className="w-4 h-4 animate-spin" />
                             Deleting...
-                          </>
+                          </span>
                         ) : (
-                          <>
+                          <span className="flex items-center gap-2">
                             <Trash2 className="w-4 h-4" />
                             Delete Collection
-                          </>
+                          </span>
                         )}
                       </button>
                     </div>
@@ -816,15 +839,15 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                                 title="Delete photo"
                               >
                                 {deletingPhotoId === photo.id ? (
-                                  <>
+                                  <span className="flex items-center gap-1.5">
                                     <Loader className="w-4 h-4 animate-spin" />
                                     <span>Deleting...</span>
-                                  </>
+                                  </span>
                                 ) : (
-                                  <>
+                                  <span className="flex items-center gap-1.5">
                                     <Trash2 className="w-4 h-4" />
                                     <span className="hidden sm:inline">Delete</span>
-                                  </>
+                                  </span>
                                 )}
                               </button>
                             </div>

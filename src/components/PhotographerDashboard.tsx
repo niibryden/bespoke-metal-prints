@@ -82,6 +82,18 @@ export function PhotographerDashboard({ photographerEmail, onLogout, onUploadCli
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Listen for photo upload events to refresh the dashboard
+    const handlePhotosUpdated = () => {
+      console.log('📸 Photos updated event received, refreshing dashboard...');
+      loadDashboardData();
+    };
+    
+    window.addEventListener('photographerPhotosUpdated', handlePhotosUpdated);
+    
+    return () => {
+      window.removeEventListener('photographerPhotosUpdated', handlePhotosUpdated);
+    };
   }, [photographerEmail]);
 
   const loadDashboardData = async () => {

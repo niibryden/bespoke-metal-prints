@@ -58,7 +58,11 @@ export function S3FolderManager({ adminInfo }: { adminInfo: { email: string; rol
       } else {
         const errorData = await response.json();
         console.error('📂 Error response:', errorData);
-        setError(errorData.error || 'Failed to load folders');
+        // Show both error and details if available
+        const errorMsg = errorData.details 
+          ? `${errorData.error}: ${errorData.details}` 
+          : (errorData.error || 'Failed to load folders');
+        setError(errorMsg);
       }
     } catch (err: any) {
       console.error('Failed to load folders:', err);
@@ -141,9 +145,35 @@ export function S3FolderManager({ adminInfo }: { adminInfo: { email: string; rol
       <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <h3 className="text-red-500 font-medium mb-1">Error Loading Folders</h3>
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-400 mb-4 whitespace-pre-wrap">{error}</p>
+            {error.includes('AWS') && (
+              <div className="bg-red-500/5 border border-red-500/10 rounded p-3 mb-4">
+                <p className="text-xs text-red-300 mb-2">
+                  <strong>How to fix:</strong>
+                </p>
+                <ol className="text-xs text-red-300 space-y-1 list-decimal list-inside">
+                  <li>Go to Supabase Dashboard → Your Project → Edge Functions</li>
+                  <li>Click on "Secrets" tab</li>
+                  <li>Update these environment variables with valid AWS credentials:
+                    <ul className="ml-6 mt-1 space-y-0.5">
+                      <li>• AWS_ACCESS_KEY_ID</li>
+                      <li>• AWS_SECRET_ACCESS_KEY</li>
+                      <li>• AWS_S3_BUCKET_NAME</li>
+                      <li>• AWS_REGION (e.g., us-east-1)</li>
+                    </ul>
+                  </li>
+                  <li>After updating, wait 10-30 seconds for Edge Functions to reload</li>
+                </ol>
+              </div>
+            )}
+            <button
+              onClick={loadFolders}
+              className="px-4 py-2 bg-[#ff6b35] text-white rounded-lg hover:bg-[#ff8c42] transition-all text-sm"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>

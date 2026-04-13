@@ -19,6 +19,64 @@ async function getStripe() {
   return stripeInstance;
 }
 
+// Helper: Upload base64 image to S3
+async function uploadImageToS3(base64Image: string, orderId: string, itemIndex: number): Promise<string> {
+  const AWS_ACCESS_KEY_ID = Deno.env.get('AWS_ACCESS_KEY_ID');
+  const AWS_SECRET_ACCESS_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+  const AWS_S3_BUCKET_NAME = Deno.env.get('AWS_S3_BUCKET_NAME');
+  const AWS_REGION = Deno.env.get('AWS_REGION') || 'us-east-1';
+  
+  if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_S3_BUCKET_NAME) {
+    throw new Error('AWS S3 not configured');
+  }
+
+  // Parse base64 data URL
+  const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    throw new Error('Invalid base64 image format');
+  }
+
+  const contentType = matches[1];
+  const base64Data = matches[2];
+  
+  // Decode base64 to buffer
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Import AWS SDK
+  const { S3Client, PutObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
+  
+  // Create S3 client
+  const s3Client = new S3Client({
+    region: AWS_REGION,
+    credentials: {
+      accessKeyId: AWS_ACCESS_KEY_ID,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY,
+    },
+  });
+
+  // Generate filename
+  const timestamp = Date.now();
+  const extension = contentType.includes('png') ? 'png' : 'jpg';
+  const key = `orders/${orderId}/item-${itemIndex}-${timestamp}.${extension}`;
+  
+  // Upload to S3
+  await s3Client.send(new PutObjectCommand({
+    Bucket: AWS_S3_BUCKET_NAME,
+    Key: key,
+    Body: bytes,
+    ContentType: contentType,
+  }));
+
+  const s3Url = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`;
+  console.log(`✅ Uploaded order image to S3: ${s3Url}`);
+  
+  return s3Url;
+}
+
 // Helper: Update order index (lightweight metadata only)
 async function updateOrderIndex(order: any) {
   try {
@@ -186,7 +244,8 @@ checkoutApp.post('/make-server-3e3a9cd7/checkout/validate-discount', async (c) =
       return c.json({ error: 'Discount code is required' }, 400);
     }
 
-    const discountCode = await kv.get(`discount:${code.toUpperCase()}`);
+    const upperCode = code.toUpperCase();
+    const discountCode = await kv.get(`discount:${upperCode}`);
     
     if (!discountCode) {
       return c.json({ valid: false, error: 'Invalid discount code' }, 404);
@@ -199,7 +258,7 @@ checkoutApp.post('/make-server-3e3a9cd7/checkout/validate-discount', async (c) =
     return c.json({
       valid: true,
       discount: {
-        code: discountCode.code,
+        code: upperCode, // Use the code from the request (already uppercased)
         type: discountCode.type,
         value: discountCode.value,
       },
@@ -298,6 +357,8 @@ checkoutApp.post('/make-server-3e3a9cd7/create-order', async (c) => {
       discount,
       smsConsent, // Add SMS consent
       imageUrl, // Print-ready image URL (already uploaded to S3)
+      items, // Array of cart items with images
+      userId, // Add userId for customer order index
     } = await c.req.json();
 
     if (!paymentIntentId || !customerEmail) {
@@ -306,6 +367,36 @@ checkoutApp.post('/make-server-3e3a9cd7/create-order', async (c) => {
 
     // Use provided order ID or generate new one
     const finalOrderId = orderId || `ord_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+    // Upload cart item images to S3 if provided
+    let itemsWithS3Urls = orderDetails.items || [];
+    if (items && Array.isArray(items) && items.length > 0) {
+      console.log(`📤 Uploading ${items.length} cart item images to S3...`);
+      itemsWithS3Urls = await Promise.all(
+        items.map(async (item: any, index: number) => {
+          if (item.image && item.image.startsWith('data:')) {
+            try {
+              const s3Url = await uploadImageToS3(item.image, finalOrderId, index);
+              return {
+                ...item,
+                imageUrl: s3Url,
+                image: s3Url, // Replace base64 with S3 URL
+              };
+            } catch (error) {
+              console.error(`❌ Failed to upload image for item ${index}:`, error);
+              // Return item without image if upload fails
+              return {
+                ...item,
+                imageUrl: null,
+                image: null,
+              };
+            }
+          }
+          return item;
+        })
+      );
+      console.log(`✅ Uploaded ${itemsWithS3Urls.filter((i: any) => i.imageUrl).length}/${items.length} images to S3`);
+    }
 
     // Extract SMS phone number if consent given
     const smsPhone = (smsConsent && shippingAddress?.phone) ? shippingAddress.phone : null;
@@ -318,6 +409,7 @@ checkoutApp.post('/make-server-3e3a9cd7/create-order', async (c) => {
       shippingAddress: shippingAddress,
       orderDetails: {
         ...orderDetails,
+        items: itemsWithS3Urls, // Use items with S3 URLs
         imageUrl: imageUrl || null, // Store image URL in orderDetails for admin panel
         image: imageUrl || null, // Also store in 'image' field for backward compatibility
       },
@@ -343,6 +435,15 @@ checkoutApp.post('/make-server-3e3a9cd7/create-order', async (c) => {
     // Update order index
     await updateOrderIndex(order);
     
+    // Update customer order index if userId exists
+    if (userId) {
+      const customerOrders = await kv.get(`customer:${userId}:orders`) || [];
+      if (!customerOrders.includes(finalOrderId)) {
+        customerOrders.unshift(finalOrderId); // Add to beginning (most recent first)
+        await kv.set(`customer:${userId}:orders`, customerOrders.slice(0, 100)); // Keep max 100 orders
+      }
+    }
+    
     // Log SMS consent status
     if (smsConsent && smsPhone) {
       console.log(`📱 SMS consent granted for order ${finalOrderId}: ${smsPhone}`);
@@ -353,8 +454,43 @@ checkoutApp.post('/make-server-3e3a9cd7/create-order', async (c) => {
     // Log image upload status
     if (imageUrl) {
       console.log(`🖼️ Print-ready image stored for order ${finalOrderId}: ${imageUrl.substring(0, 80)}...`);
+    } else if (itemsWithS3Urls.length > 0) {
+      const imageCount = itemsWithS3Urls.filter((i: any) => i.imageUrl).length;
+      console.log(`🖼️ ${imageCount} cart item images stored for order ${finalOrderId}`);
     } else {
-      console.warn(`⚠️ No print-ready image URL for order ${finalOrderId}`);
+      console.warn(`⚠️ No print-ready images for order ${finalOrderId}`);
+    }
+    
+    // Track marketplace photo sales if applicable
+    if (itemsWithS3Urls && Array.isArray(itemsWithS3Urls)) {
+      for (const item of itemsWithS3Urls) {
+        if (item.marketplacePhotoId) {
+          try {
+            // Track the sale for photographer royalties
+            const trackResponse = await fetch(`${c.req.url.split('/make-server')[0]}/make-server-3e3a9cd7/track-marketplace-sale`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                photoId: item.marketplacePhotoId,
+                orderId: finalOrderId,
+                printSize: item.size || 'Unknown',
+                quantity: item.quantity || 1,
+                basePrice: item.price || 0,
+                customerName: shippingAddress?.name || 'Anonymous',
+              }),
+            });
+            
+            if (trackResponse.ok) {
+              const trackData = await trackResponse.json();
+              console.log(`✅ Tracked marketplace sale for photo ${item.marketplacePhotoId}: $${trackData.royaltyAmount} royalty`);
+            } else {
+              console.error(`❌ Failed to track marketplace sale for photo ${item.marketplacePhotoId}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error tracking marketplace sale:`, error);
+          }
+        }
+      }
     }
     
     console.log(`✅ Created order: ${finalOrderId} for payment intent: ${paymentIntentId}`);
@@ -611,69 +747,56 @@ checkoutApp.post('/make-server-3e3a9cd7/update-order-status', async (c) => {
   }
 });
 
-// Upload print-ready image to S3
+// Upload image to S3 and update order (called after payment success)
 checkoutApp.post('/make-server-3e3a9cd7/upload-image', async (c) => {
   try {
-    const { imageData, fileName } = await c.req.json();
+    const { orderId, fileName, imageData } = await c.req.json();
+
+    if (!orderId || !fileName || !imageData) {
+      return c.json({ error: 'Missing required fields: orderId, fileName, or imageData' }, 400);
+    }
+
+    console.log(`📤 Uploading image for order ${orderId} to S3...`);
+
+    // Upload image to S3
+    const s3Url = await uploadImageToS3(imageData, orderId, 0);
     
-    if (!imageData || !fileName) {
-      return c.json({ error: 'Missing imageData or fileName' }, 400);
+    console.log(`✅ Image uploaded to S3: ${s3Url}`);
+
+    // Update order with the S3 image URL
+    const order = await kv.get(`order:${orderId}`);
+    
+    if (!order) {
+      console.error(`❌ Order ${orderId} not found after image upload`);
+      return c.json({ error: 'Order not found' }, 404);
     }
 
-    console.log('📤 Uploading image to S3:', fileName);
-
-    // Get AWS credentials
-    const AWS_ACCESS_KEY_ID = Deno.env.get('AWS_ACCESS_KEY_ID');
-    const AWS_SECRET_ACCESS_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
-    const AWS_S3_BUCKET_NAME = Deno.env.get('AWS_S3_BUCKET_NAME');
-    const AWS_REGION = Deno.env.get('AWS_REGION') || 'us-east-1';
-
-    if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_S3_BUCKET_NAME) {
-      console.error('❌ AWS credentials not configured');
-      return c.json({ error: 'AWS S3 not configured' }, 500);
+    // Store image URL in multiple fields for compatibility
+    if (!order.orderDetails) {
+      order.orderDetails = {};
     }
+    
+    order.orderDetails.imageUrl = s3Url;
+    order.orderDetails.image = s3Url; // Also store in 'image' field
+    order.imageUrl = s3Url; // Root level for easy access
+    order.updatedAt = new Date().toISOString();
 
-    // Import AWS SDK
-    const { S3Client, PutObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
+    await kv.set(`order:${orderId}`, order);
+    await updateOrderIndex(order);
 
-    const s3Client = new S3Client({
-      region: AWS_REGION,
-      credentials: {
-        accessKeyId: AWS_ACCESS_KEY_ID,
-        secretAccessKey: AWS_SECRET_ACCESS_KEY,
-      },
-    });
-
-    // Convert base64 to buffer
-    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-    const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-
-    // Upload to S3
-    const command = new PutObjectCommand({
-      Bucket: AWS_S3_BUCKET_NAME,
-      Key: fileName,
-      Body: imageBuffer,
-      ContentType: 'image/png',
-      ACL: 'private', // Private - will use signed URLs
-    });
-
-    await s3Client.send(command);
-
-    const imageUrl = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${fileName}`;
-    console.log('✅ Image uploaded successfully:', imageUrl);
+    console.log(`✅ Order ${orderId} updated with image URL`);
 
     return c.json({ 
       success: true, 
-      url: imageUrl 
+      imageUrl: s3Url,
+      url: s3Url // Also include 'url' for frontend compatibility
     });
 
-  } catch (error: any) {
-    console.error('❌ Upload image error:', error);
-    console.error('Error stack:', error.stack);
+  } catch (error) {
+    console.error('❌ Error uploading image to S3:', error);
     return c.json({ 
-      error: 'Failed to upload image to S3', 
-      details: error.message,
-      errorType: error.name || 'Unknown'
+      error: 'Failed to upload image', 
+      details: error.message 
     }, 500);
   }
 });

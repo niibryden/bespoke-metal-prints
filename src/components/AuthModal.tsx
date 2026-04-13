@@ -2,14 +2,15 @@ import { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { X, Mail, Lock, User, Loader2, Eye, EyeOff } from 'lucide-react';
 import { getSupabaseClient } from '../utils/supabase/client';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
 
 interface AuthModalProps {
   onClose: () => void;
+  onSuccess?: () => void; // Add callback to auto-proceed after auth
 }
 
-export function AuthModal({ onClose }: AuthModalProps) {
+export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +47,11 @@ export function AuthModal({ onClose }: AuthModalProps) {
           throw signInError;
         }
 
-        setSuccess('Login successful! You can now proceed to checkout.');
+        setSuccess('Login successful! Proceeding to checkout...');
         setTimeout(() => {
+          onSuccess?.(); // Call success callback to auto-proceed
           onClose();
-        }, 1500);
+        }, 800);
       } else {
         // Sign up - use backend API
         if (!formData.name) {
@@ -75,14 +77,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
           throw new Error(data.error || 'Sign up failed');
         }
 
-        setSuccess('Account created successfully! You can now proceed to checkout.');
+        setSuccess('Account created! Proceeding to checkout...');
         
         // If we got an access token, sign in with it
         if (data.access_token) {
           // User is already signed in via the backend
           setTimeout(() => {
+            onSuccess?.(); // Call success callback to auto-proceed
             onClose();
-          }, 1500);
+          }, 800);
         } else {
           // Need to sign in manually
           setTimeout(async () => {
@@ -91,13 +94,14 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 email: formData.email,
                 password: formData.password,
               });
+              onSuccess?.(); // Call success callback to auto-proceed
               onClose();
             } catch (err) {
               console.error('Auto sign-in failed:', err);
               setError('Account created, but auto sign-in failed. Please sign in manually.');
               setIsLogin(true);
             }
-          }, 1500);
+          }, 800);
         }
       }
     } catch (err: any) {

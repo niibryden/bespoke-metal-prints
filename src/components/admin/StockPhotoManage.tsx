@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Loader, Trash2, AlertTriangle, AlertCircle, Folder, CheckSquare, Square, Edit2, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { getServerUrl } from '../../utils/serverUrl';
 
 interface Photo {
@@ -499,37 +499,53 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
         </div>
         {collections.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={updateCollectionDescriptions}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-600/20 transition-all"
-              title="Update collection descriptions"
-            >
-              <Edit2 className="w-4 h-4" />
-              Update Descriptions
-            </button>
-            <button
-              onClick={cleanupCollections}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600/10 text-blue-500 border border-blue-500/20 rounded-lg hover:bg-blue-600/20 transition-all"
-              title="Remove empty and duplicate collections"
-            >
-              <Trash2 className="w-4 h-4" />
-              Cleanup Collections
-            </button>
-            <button
-              onClick={cleanS3Images}
-              className="flex items-center gap-2 px-4 py-2 bg-yellow-600/10 text-yellow-500 border border-yellow-500/20 rounded-lg hover:bg-yellow-600/20 transition-all"
-              title="Remove S3 images with CORS issues"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              Fix CORS Errors
-            </button>
-            <button
-              onClick={clearAllCollections}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-600/20 transition-all"
-            >
-              <Trash2 className="w-4 h-4" />
-              Clear All Collections
-            </button>
+            {[
+              {
+                key: 'update-descriptions',
+                onClick: updateCollectionDescriptions,
+                className: 'bg-green-600/10 text-green-500 border-green-500/20 hover:bg-green-600/20',
+                title: 'Update collection descriptions',
+                icon: Edit2,
+                label: 'Update Descriptions',
+              },
+              {
+                key: 'cleanup-collections',
+                onClick: cleanupCollections,
+                className: 'bg-blue-600/10 text-blue-500 border-blue-500/20 hover:bg-blue-600/20',
+                title: 'Remove empty and duplicate collections',
+                icon: Trash2,
+                label: 'Cleanup Collections',
+              },
+              {
+                key: 'fix-cors',
+                onClick: cleanS3Images,
+                className: 'bg-yellow-600/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-600/20',
+                title: 'Remove S3 images with CORS issues',
+                icon: AlertTriangle,
+                label: 'Fix CORS Errors',
+              },
+              {
+                key: 'clear-all',
+                onClick: clearAllCollections,
+                className: 'bg-red-600/10 text-red-500 border-red-500/20 hover:bg-red-600/20',
+                title: '',
+                icon: Trash2,
+                label: 'Clear All Collections',
+              },
+            ].map((btn) => {
+              const Icon = btn.icon;
+              return (
+                <button
+                  key={btn.key}
+                  onClick={btn.onClick}
+                  className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all ${btn.className}`}
+                  title={btn.title}
+                >
+                  <Icon className="w-4 h-4" />
+                  {btn.label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

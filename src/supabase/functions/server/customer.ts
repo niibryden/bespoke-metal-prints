@@ -25,21 +25,40 @@ function getSupabaseAdmin() {
 
 // Middleware to verify user authentication
 async function verifyUser(c: any) {
-  const accessToken = c.req.header('Authorization')?.split(' ')[1];
+  const authHeader = c.req.header('Authorization');
+  
+  if (!authHeader) {
+    return { error: 'No authorization token provided', status: 401 };
+  }
+  
+  const accessToken = authHeader.split(' ')[1];
   
   if (!accessToken) {
     return { error: 'No authorization token provided', status: 401 };
   }
   
-  const supabase = getSupabaseAdmin();
-  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-  
-  if (error || !user) {
-    console.error('Auth error:', error);
-    return { error: 'Unauthorized', status: 401 };
+  // Check if the token is the anon key (not a user token)
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  if (accessToken === anonKey) {
+    console.error('Auth error: Anon key provided instead of user access token');
+    return { error: 'Invalid authorization token - user access token required', status: 401 };
   }
   
-  return { user };
+  const supabase = getSupabaseAdmin();
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (error || !user) {
+      console.error('Auth error:', error?.message || 'No user found');
+      return { error: 'Invalid or expired authorization token', status: 401 };
+    }
+    
+    return { user };
+  } catch (error: any) {
+    console.error('Auth exception:', error?.message || error);
+    return { error: 'Authorization failed', status: 401 };
+  }
 }
 
 // Get customer profile data
@@ -60,17 +79,32 @@ customerApp.get('/make-server-3e3a9cd7/customer/:userId', async (c) => {
     // Get user's saved addresses
     const addresses = await kv.getByPrefix(`customer:${userId}:address:`);
     
-    // Get user's orders
-    const allOrders = await kv.getByPrefix('order:');
-    const userOrders = allOrders.filter((order: any) => 
-      order.userId === userId || order.customerEmail === verification.user.email
-    );
+    // Get user's orders using customer-specific index (avoids loading all orders)
+    const userOrderIds = await kv.get(`customer:${userId}:orders`) || [];
+    const userOrders = [];
+    
+    // Load only the user's orders individually (max 50 most recent)
+    const recentOrderIds = userOrderIds.slice(0, 50);
+    for (const orderId of recentOrderIds) {
+      try {
+        const order = await kv.get(`order:${orderId}`);
+        if (order) {
+          // Remove image data to reduce payload size
+          if (order.orderDetails?.image?.data) {
+            order.orderDetails.image.data = '[REDACTED]';
+          }
+          userOrders.push(order);
+        }
+      } catch (err) {
+        console.error(`Failed to load order ${orderId}:`, err);
+      }
+    }
     
     return c.json({
       userId: userId,
       email: verification.user.email,
       savedAddresses: addresses || [],
-      orders: userOrders || [],
+      orders: userOrders,
     });
   } catch (error: any) {
     console.error('Error fetching customer data:', error);
@@ -163,13 +197,26 @@ customerApp.get('/make-server-3e3a9cd7/customer/:userId/orders', async (c) => {
       return c.json({ error: 'Forbidden' }, 403);
     }
     
-    // Get all orders
-    const allOrders = await kv.getByPrefix('order:');
+    // Get user's orders using customer-specific index (avoids loading all orders)
+    const userOrderIds = await kv.get(`customer:${userId}:orders`) || [];
+    const customerOrders = [];
     
-    // Filter orders for this customer's email
-    const customerOrders = allOrders.filter((order: any) => 
-      order.customerEmail === verification.user.email
-    );
+    // Load only the user's orders individually (max 50 most recent)
+    const recentOrderIds = userOrderIds.slice(0, 50);
+    for (const orderId of recentOrderIds) {
+      try {
+        const order = await kv.get(`order:${orderId}`);
+        if (order && order.customerEmail === verification.user.email) {
+          // Remove image data to reduce payload size
+          if (order.orderDetails?.image?.data) {
+            order.orderDetails.image.data = '[REDACTED]';
+          }
+          customerOrders.push(order);
+        }
+      } catch (err) {
+        console.error(`Failed to load order ${orderId}:`, err);
+      }
+    }
     
     // Sort by creation date (newest first)
     customerOrders.sort((a: any, b: any) => 
@@ -201,6 +248,18 @@ customerApp.post('/make-server-3e3a9cd7/customer/:userId/address', async (c) => 
     
     const addressData = await c.req.json();
     const addressId = `addr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // If this address is set as default, unset all other default addresses
+    if (addressData.isDefault) {
+      const allAddresses = await kv.getByPrefix(`customer:${userId}:address:`);
+      for (const addr of allAddresses) {
+        if (addr.isDefault) {
+          addr.isDefault = false;
+          addr.updatedAt = new Date().toISOString();
+          await kv.set(`customer:${userId}:address:${addr.id}`, addr);
+        }
+      }
+    }
     
     const address = {
       id: addressId,
@@ -242,6 +301,18 @@ customerApp.put('/make-server-3e3a9cd7/customer/:userId/address/:addressId', asy
     }
     
     const addressData = await c.req.json();
+    
+    // If this address is being set as default, unset all other default addresses
+    if (addressData.isDefault && !existingAddress.isDefault) {
+      const allAddresses = await kv.getByPrefix(`customer:${userId}:address:`);
+      for (const addr of allAddresses) {
+        if (addr.id !== addressId && addr.isDefault) {
+          addr.isDefault = false;
+          addr.updatedAt = new Date().toISOString();
+          await kv.set(`customer:${userId}:address:${addr.id}`, addr);
+        }
+      }
+    }
     
     const updatedAddress = {
       ...existingAddress,
@@ -468,6 +539,81 @@ customerApp.get('/make-server-3e3a9cd7/tracking/:trackingNumber/live', async (c)
     console.error('Error fetching live tracking:', error);
     return c.json({ 
       error: 'Failed to fetch live tracking',
+      details: error.message
+    }, 500);
+  }
+});
+
+// Track orders by email (public endpoint - for guest checkout)
+customerApp.post('/make-server-3e3a9cd7/tracking/by-email', async (c) => {
+  try {
+    const { email } = await c.req.json();
+    
+    if (!email || !email.includes('@')) {
+      return c.json({ 
+        error: 'Valid email address is required'
+      }, 400);
+    }
+    
+    console.log(`📧 Looking up orders for email: ${email}`);
+    
+    // Search for all orders with this email
+    const supabase = getSupabaseAdmin();
+    const { data: orderData } = await supabase
+      .from("kv_store_3e3a9cd7")
+      .select("key, value")
+      .like("key", "order:%")
+      .limit(1000);
+    
+    if (!orderData || orderData.length === 0) {
+      return c.json({ 
+        error: 'No orders found',
+        details: 'No orders found for this email address.'
+      }, 404);
+    }
+    
+    // Filter orders by email and sort by date (newest first)
+    const matchingOrders = orderData
+      .map(item => item.value)
+      .filter(order => order.customerEmail?.toLowerCase() === email.toLowerCase())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map(order => ({
+        orderId: order.id,
+        status: order.status,
+        trackingNumber: order.trackingNumber || null,
+        trackingCarrier: order.trackingCarrier || null,
+        trackingUrl: order.trackingUrl || null,
+        shippedAt: order.shippedAt || null,
+        deliveredAt: order.deliveredAt || null,
+        createdAt: order.createdAt,
+        amount: order.amount,
+        shippingAddress: order.shippingAddress || null,
+        orderDetails: {
+          finish: order.orderDetails?.finish,
+          size: order.orderDetails?.size,
+          mountType: order.orderDetails?.mountType,
+          frame: order.orderDetails?.frame,
+        }
+      }));
+    
+    if (matchingOrders.length === 0) {
+      return c.json({ 
+        error: 'No orders found',
+        details: 'No orders found for this email address.'
+      }, 404);
+    }
+    
+    console.log(`✅ Found ${matchingOrders.length} orders for ${email}`);
+    
+    return c.json({
+      success: true,
+      orders: matchingOrders,
+      count: matchingOrders.length
+    });
+  } catch (error: any) {
+    console.error('❌ Error looking up orders by email:', error);
+    return c.json({ 
+      error: 'Failed to fetch orders',
       details: error.message
     }, 500);
   }

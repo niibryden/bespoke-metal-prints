@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
 
 interface InventoryItem {
@@ -34,8 +34,11 @@ export function useInventory() {
     try {
       // Use public inventory endpoint for customer-facing pages
       // ⚠️ CRITICAL: Reads from KV key 'inventory' - same as admin panel
+      const url = `${getServerUrl()}/inventory`;
+      console.log('📦 Fetching inventory from:', url);
+      
       const response = await fetch(
-        `${getServerUrl()}/inventory`,
+        url,
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,
@@ -45,6 +48,7 @@ export function useInventory() {
 
       if (!response.ok) {
         console.warn('Inventory fetch failed with status:', response.status);
+        console.warn('Response:', await response.text().catch(() => 'Unable to read response'));
         // Don't throw, just use empty inventory
         setInventory([]);
         setError(null); // Don't show error to user
@@ -60,7 +64,9 @@ export function useInventory() {
       setInventory(inventoryItems);
       setError(null);
     } catch (err) {
-      console.warn('Error fetching inventory (non-critical):', err);
+      console.error('Error fetching inventory (non-critical):', err);
+      console.error('Server URL:', getServerUrl());
+      console.error('Project ID:', projectId);
       // Don't show error to user - just use empty inventory
       setInventory([]);
       setError(null);

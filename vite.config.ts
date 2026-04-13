@@ -1,10 +1,23 @@
 
   import { defineConfig } from 'vite';
-  import react from '@vitejs/plugin-react-swc';
+  import react from '@vitejs/plugin-react';
+  import tailwindcss from '@tailwindcss/vite';
   import path from 'path';
 
+function figmaAssetResolver() {
+  return {
+    name: 'figma-asset-resolver',
+    resolveId(id) {
+      if (id.startsWith('figma:asset/')) {
+        const filename = id.replace('figma:asset/', '')
+        return path.resolve(__dirname, 'src/assets', filename)
+      }
+    },
+  }
+}
+
   export default defineConfig({
-    plugins: [react()],
+    plugins: [react(), tailwindcss(), figmaAssetResolver()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
@@ -19,19 +32,11 @@
         'next-themes@0.4.6': 'next-themes',
         'lucide-react@0.487.0': 'lucide-react',
         'input-otp@1.4.2': 'input-otp',
-        'figma:asset/fc5326d3ef96710ce5e71421bdceec94c8906060.png': path.resolve(__dirname, './src/assets/fc5326d3ef96710ce5e71421bdceec94c8906060.png'),
-        'figma:asset/c631d88cda172aa79bbfa275e5b051663623c2a8.png': path.resolve(__dirname, './src/assets/c631d88cda172aa79bbfa275e5b051663623c2a8.png'),
-        'figma:asset/b87a44ea706a718f76149582796ccaf613512b6f.png': path.resolve(__dirname, './src/assets/b87a44ea706a718f76149582796ccaf613512b6f.png'),
-        'figma:asset/660fa4e9dac957905a2abdd453250c25fa2bbad2.png': path.resolve(__dirname, './src/assets/660fa4e9dac957905a2abdd453250c25fa2bbad2.png'),
-        'figma:asset/5fa90e3609deca3bf85101c0d5901f800cd5b5bb.png': path.resolve(__dirname, './src/assets/5fa90e3609deca3bf85101c0d5901f800cd5b5bb.png'),
-        'figma:asset/5200336f78fc246d11e145c8559b9f6ec3901ea2.png': path.resolve(__dirname, './src/assets/5200336f78fc246d11e145c8559b9f6ec3901ea2.png'),
-        'figma:asset/508b3cfb03461c242b2c3c2ec0021b09aaf05ef6.png': path.resolve(__dirname, './src/assets/508b3cfb03461c242b2c3c2ec0021b09aaf05ef6.png'),
-        'figma:asset/503d36cae9f0d312a29050db106ff5a907487708.png': path.resolve(__dirname, './src/assets/503d36cae9f0d312a29050db106ff5a907487708.png'),
-        'figma:asset/239b0bd45e088915587b9a145f68289ad25e501b.png': path.resolve(__dirname, './src/assets/239b0bd45e088915587b9a145f68289ad25e501b.png'),
-        'figma:asset/0c13697df2e21036a866bbc91155db10f95f8681.png': path.resolve(__dirname, './src/assets/0c13697df2e21036a866bbc91155db10f95f8681.png'),
+        'hono@4': 'hono',
         'embla-carousel-react@8.6.0': 'embla-carousel-react',
         'cmdk@1.1.1': 'cmdk',
         'class-variance-authority@0.7.1': 'class-variance-authority',
+        '@supabase/supabase-js@2': '@supabase/supabase-js',
         '@radix-ui/react-tooltip@1.1.8': '@radix-ui/react-tooltip',
         '@radix-ui/react-toggle@1.1.2': '@radix-ui/react-toggle',
         '@radix-ui/react-toggle-group@1.1.2': '@radix-ui/react-toggle-group',

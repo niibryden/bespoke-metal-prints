@@ -2,9 +2,10 @@ import { Instagram, Facebook, MapPin, Mail, Globe, Phone } from 'lucide-react';
 
 interface FooterProps {
   onAdminClick?: () => void;
+  onMarketplaceClick?: () => void;
 }
 
-export function Footer({ onAdminClick }: FooterProps) {
+export function Footer({ onAdminClick, onMarketplaceClick }: FooterProps) {
   return (
     <footer id="contact" className="bg-white text-black py-8 md:py-12 border-t border-[#ff6b35]/20 dark:bg-black dark:text-white">
       <div className="container mx-auto px-4 sm:px-6">
@@ -127,6 +128,14 @@ export function Footer({ onAdminClick }: FooterProps) {
             >
               Metal Prints vs Canvas
             </a>
+            {onMarketplaceClick && (
+              <button
+                onClick={onMarketplaceClick}
+                className="text-[#ff6b35] hover:text-[#ff8555] transition-colors font-semibold"
+              >
+                Marketplace
+              </button>
+            )}
             {onAdminClick && (
               <button
                 onClick={onAdminClick}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
 
 interface DiagnosticPageProps {

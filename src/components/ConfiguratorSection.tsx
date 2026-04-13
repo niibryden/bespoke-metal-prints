@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Settings, Eye, ShoppingCart, Check, X, Image as ImageIcon, ZoomIn, ZoomOut, RotateCw, RotateCcw, Maximize2, FlipHorizontal2, FlipVertical2, RefreshCw, Move, AlertTriangle, Info, ChevronLeft, ChevronRight, Undo2, Redo2, HelpCircle, DollarSign, Maximize, Minimize, Keyboard } from 'lucide-react';
+import { Upload, Settings, Eye, ShoppingCart, Check, X, Image as ImageIcon, ZoomIn, ZoomOut, RotateCw, RotateCcw, Maximize2, FlipHorizontal2, FlipVertical2, RefreshCw, Move, AlertTriangle, Info, ChevronLeft, ChevronRight, Undo2, Redo2, HelpCircle, DollarSign, Maximize, Minimize, Keyboard, Camera } from 'lucide-react';
 import { CheckoutPage } from './CheckoutPage';
 import { useInventory } from '../hooks/useInventory';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { AuthModal } from './AuthModal';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { PriceBreakdownModal } from './PriceBreakdownModal';
@@ -16,11 +16,17 @@ import { Toast } from './Toast';
 import { SuccessConfetti } from './SuccessConfetti';
 import { MiniCartPreview } from './MiniCartPreview';
 import { loadImageAsDataUrl } from '../utils/imageProxy';
+import { ImageQualityAnalyzer } from './ImageQualityAnalyzer';
+import { LivePricePreview } from './LivePricePreview';
+import { MarketplaceBrowsePage } from './MarketplaceBrowsePage';
 
 interface InventorySize {
   id: string;
   name: string;
+  displayName?: string;  // Optional display name with labels like "(Sample)" or "(Popular)"
+  altName?: string;      // Alternative name format (e.g., "12 x 8" vs "12 × 8")
   sku: string;
+  altSku?: string;       // Alternative SKU for rotated orientation (e.g., SIZE-8X12 for SIZE-12X8)
   quantity: number;
   price: number;
 }
@@ -117,6 +123,8 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
+  const [showMarketplace, setShowMarketplace] = useState(false);
+  const [marketplacePhotoId, setMarketplacePhotoId] = useState<string | null>(null);
   
   // Mobile detection - disable crop box on mobile and tablets
   const [isMobile, setIsMobile] = useState(() => {
@@ -214,46 +222,51 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
           const data = await response.json();
           const sizes = data.inventory?.filter((item: any) => item.category === 'size') || [];
           
-          // If no sizes found, use fallback instead of throwing error
-          if (sizes.length === 0) {
-            setAvailableSizes([
-              { id: '1', name: '5" x 7"', sku: 'SIZE-5X7', quantity: 200, price: 25.00 },
-              { id: '1b', name: '7" x 5"', sku: 'SIZE-7X5', quantity: 200, price: 25.00 },
-              { id: '2', name: '12" x 8"', sku: 'SIZE-12X8', quantity: 150, price: 49.99 },
-              { id: '2b', name: '8" x 12"', sku: 'SIZE-8X12', quantity: 150, price: 49.99 },
-              { id: '3', name: '17" x 11"', sku: 'SIZE-17X11', quantity: 120, price: 69.99 },
-              { id: '3b', name: '11" x 17"', sku: 'SIZE-11X17', quantity: 120, price: 69.99 },
-              { id: '4', name: '24" x 16"', sku: 'SIZE-24X16', quantity: 100, price: 109.99 },
-              { id: '4b', name: '16" x 24"', sku: 'SIZE-16X24', quantity: 100, price: 109.99 },
-              { id: '5', name: '30" x 20"', sku: 'SIZE-30X20', quantity: 80, price: 149.99 },
-              { id: '5b', name: '20" x 30"', sku: 'SIZE-20X30', quantity: 80, price: 149.99 },
-              { id: '6', name: '36" x 24"', sku: 'SIZE-36X24', quantity: 60, price: 199.99 },
-              { id: '6b', name: '24" x 36"', sku: 'SIZE-24X36', quantity: 60, price: 199.99 },
-              { id: '7', name: '40" x 30"', sku: 'SIZE-40X30', quantity: 40, price: 269.99 },
-              { id: '7b', name: '30" x 40"', sku: 'SIZE-30X40', quantity: 40, price: 269.99 },
-            ]);
-            setConfig(prev => ({ ...prev, size: '8" × 12"' }));
-            return;
-          }
+          // Define all standard sizes that should always be shown (8 sizes, user can rotate for orientation)
+          const standardSizes = [
+            { id: '1', name: '5" × 7"', displayName: '5" × 7" (Sample)', altName: '5" x 7"', sku: 'SIZE-5X7', altSku: 'SIZE-7X5', quantity: 0, price: 25.00 },
+            { id: '2', name: '12" × 8"', displayName: '12" × 8" (Popular)', altName: '12" x 8"', sku: 'SIZE-12X8', altSku: 'SIZE-8X12', quantity: 0, price: 49.99 },
+            { id: '3', name: '17" × 11"', displayName: '17" × 11"', altName: '17" x 11"', sku: 'SIZE-17X11', altSku: 'SIZE-11X17', quantity: 0, price: 69.99 },
+            { id: '4', name: '24" × 16"', displayName: '24" × 16"', altName: '24" x 16"', sku: 'SIZE-24X16', altSku: 'SIZE-16X24', quantity: 0, price: 109.99 },
+            { id: '5', name: '30" × 20"', displayName: '30" × 20"', altName: '30" x 20"', sku: 'SIZE-30X20', altSku: 'SIZE-20X30', quantity: 0, price: 149.99 },
+            { id: '6', name: '36" × 24"', displayName: '36" × 24"', altName: '36" x 24"', sku: 'SIZE-36X24', altSku: 'SIZE-24X36', quantity: 0, price: 199.99 },
+            { id: '7', name: '40" × 30"', displayName: '40" × 30"', altName: '40" x 30"', sku: 'SIZE-40X30', altSku: 'SIZE-30X40', quantity: 0, price: 269.99 },
+          ];
           
-          // Sort sizes from smallest to biggest by area (width * height)
-          const sortedSizes = sizes.sort((a: InventorySize, b: InventorySize) => {
-            const getArea = (name: string) => {
-              const match = name.match(/(\d+\.?\d*)\s*"\s*x\s*(\d+\.?\d*)/i);
-              if (match) {
-                return parseFloat(match[1]) * parseFloat(match[2]);
-              }
-              return 0;
-            };
-            return getArea(a.name) - getArea(b.name);
+          // Merge inventory data with standard sizes
+          // If a size exists in inventory, use its data; otherwise use the default (quantity: 0)
+          const mergedSizes = standardSizes.map(standardSize => {
+            // Try to find this size in inventory by checking multiple name formats
+            // Also check BOTH orientations (e.g., 12x8 and 8x12) since they're interchangeable
+            const inventoryMatch = sizes.find((invSize: any) => {
+              // Normalize both names by removing all whitespace and special chars, just compare digits and x
+              const normalize = (str: string) => str.toLowerCase().replace(/["\s×]/g, '').trim();
+              const invNorm = normalize(invSize.name);
+              const stdNorm = normalize(standardSize.name);
+              const altNorm = normalize(standardSize.altName);
+              return invNorm === stdNorm || invNorm === altNorm || invSize.sku === standardSize.sku || invSize.sku === standardSize.altSku;
+            });
+            
+            if (inventoryMatch) {
+              // Use inventory data but keep the standardized name format
+              return {
+                ...standardSize,
+                quantity: inventoryMatch.quantity,
+                price: inventoryMatch.price,
+                id: inventoryMatch.id,
+              };
+            }
+            
+            // Return default with quantity 0 (out of stock)
+            return standardSize;
           });
           
-          setAvailableSizes(sortedSizes);
-          console.log('Available sizes:', sortedSizes.map(s => s.name).join(', '));
-          console.log('Current orientation for default size selection:', orientation);
+          console.log('📦 Merged sizes (with inventory data):', mergedSizes.map(s => `${s.name} (${s.quantity > 0 ? 'IN STOCK' : 'OUT OF STOCK'})`).join(', '));
+          
+          setAvailableSizes(mergedSizes);
           
           // NEW: Find 8x12 size using dimension matching (works with any quote style and whitespace)
-          const default8x12 = sortedSizes.find((size: InventorySize) => {
+          const default8x12 = mergedSizes.find((size: InventorySize) => {
             // More flexible regex that handles tabs, spaces, and various quote styles
             const match = size.name.match(/(\d+\.?\d*)\s*["\u0022\u201d]?\s*[x×]\s*(\d+\.?\d*)/i);
             if (!match || size.quantity <= 0) return false;
@@ -361,40 +374,37 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
       return;
     }
     
-    if (!user) {
-      setShowAuthModal(true);
-    } else {
-      // Validate that we have a valid price before proceeding
-      if (!basePrice || basePrice <= 0) {
-        console.error('❌ Invalid basePrice:', basePrice, 'config:', config, 'inventory loaded:', inventory.length);
-        setToast({
-          message: 'Unable to calculate price. Please refresh and try again.',
-          type: 'error'
-        });
-        return;
-      }
-      
-      console.log('✅ Proceeding to checkout with basePrice:', basePrice);
-      
-      // Generate high-resolution print-ready image before checkout
-      console.log('🖨️ Generating high-resolution print-ready image for checkout...');
-      setIsGeneratingCrop(true);
-      
-      try {
-        const printReadyUrl = await generatePrintReadyImage();
-        if (printReadyUrl) {
-          setCroppedImageUrl(printReadyUrl);
-          console.log('✅ High-res print-ready image generated, size:', Math.round(printReadyUrl.length / 1024), 'KB');
-        }
-      } catch (error) {
-        console.error('❌ Failed to generate print-ready image:', error);
-        // Continue anyway with existing image
-      } finally {
-        setIsGeneratingCrop(false);
-      }
-      
-      setShowCheckout(true);
+    // Validate that we have a valid price before proceeding
+    if (!basePrice || basePrice <= 0) {
+      console.error('❌ Invalid basePrice:', basePrice, 'config:', config, 'inventory loaded:', inventory.length);
+      setToast({
+        message: 'Unable to calculate price. Please refresh and try again.',
+        type: 'error'
+      });
+      return;
     }
+    
+    console.log('✅ Proceeding to checkout with basePrice:', basePrice);
+    
+    // Generate high-resolution print-ready image before checkout
+    console.log('🖨️ Generating high-resolution print-ready image for checkout...');
+    setIsGeneratingCrop(true);
+    
+    try {
+      const printReadyUrl = await generatePrintReadyImage();
+      if (printReadyUrl) {
+        setCroppedImageUrl(printReadyUrl);
+        console.log('✅ High-res print-ready image generated, size:', Math.round(printReadyUrl.length / 1024), 'KB');
+      }
+    } catch (error) {
+      console.error('❌ Failed to generate print-ready image:', error);
+      // Continue anyway with existing image
+    } finally {
+      setIsGeneratingCrop(false);
+    }
+    
+    // Always show checkout - let CheckoutPage handle guest vs auth choice
+    setShowCheckout(true);
   };
 
   // Handle add to cart - generate print-ready image and add to cart
@@ -1116,6 +1126,46 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
     };
   }, [isDraggingImage, dragStart, imageTransform]);
 
+  // Frame pricing constants - fixed prices for standard sizes
+  const STANDARD_FRAME_PRICES: Record<string, number> = {
+    '5x7': 39.99,
+    '7x5': 39.99,
+    '12x8': 49.99,
+    '8x12': 49.99,
+    '17x11': 59.99,
+    '11x17': 59.99,
+    '24x16': 89.99,
+    '16x24': 89.99,
+    '30x20': 109.99,
+    '20x30': 109.99,
+    '36x24': 139.99,
+    '24x36': 139.99,
+    '40x30': 169.99,
+    '30x40': 169.99,
+  };
+  
+  const FRAME_PRICE_PER_INCH = 1.25; // Price per inch of perimeter for custom sizes
+  
+  // Helper to parse size string into dimensions
+  const parseSizeHelper = (size: string): { width: number; height: number } | null => {
+    const dimensions = size.match(/(\d+\.?\d*)\s*[""]\s*[×x]\s*(\d+\.?\d*)/);
+    if (dimensions) {
+      return {
+        width: parseFloat(dimensions[1]),
+        height: parseFloat(dimensions[2])
+      };
+    }
+    return null;
+  };
+  
+  // Helper to check if a size is a standard size
+  const isStandardSize = (size: string): boolean => {
+    const dims = parseSizeHelper(size);
+    if (!dims) return false;
+    const normalized = `${Math.round(dims.width)}x${Math.round(dims.height)}`;
+    return STANDARD_FRAME_PRICES[normalized] !== undefined;
+  };
+
   // Pricing based on configuration
   const calculatePrice = () => {
     // Safety check for config
@@ -1272,16 +1322,23 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
       return 0; // Stick Tape is free
     };
     
-    const getFramePrice = (frameName: string): number => {
-      const frameItem = inventory.find(
-        (item) => item.category === 'frame' && item.name.toLowerCase().trim() === frameName.toLowerCase().trim()
-      );
-      // Fallback to hardcoded if not in inventory
-      if (frameItem) return frameItem.price;
-      if (frameName.toLowerCase().includes('black')) return 89.99;
-      if (frameName.toLowerCase().includes('gold')) return 129.99;
-      if (frameName.toLowerCase().includes('wood') || frameName.toLowerCase().includes('natural')) return 109.99;
-      return 0; // None is free
+    const getFramePrice = (frameName: string, size: string): number => {
+      // If no frame selected, it's free
+      if (!frameName || frameName.toLowerCase().trim() === 'none') return 0;
+      
+      // Use fixed pricing for standard sizes
+      const dims = parseSizeHelper(size);
+      if (!dims) return 0;
+      
+      const normalized = `${Math.round(dims.width)}x${Math.round(dims.height)}`;
+      
+      if (STANDARD_FRAME_PRICES[normalized] !== undefined) {
+        return STANDARD_FRAME_PRICES[normalized];
+      }
+      
+      // For custom sizes, calculate based on perimeter
+      const perimeter = 2 * (dims.width + dims.height);
+      return parseFloat((perimeter * FRAME_PRICE_PER_INCH).toFixed(2));
     };
     
     // Safety check: ensure we have a valid base price before adding options
@@ -1293,8 +1350,8 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
     // Mount pricing - get from inventory
     price += getMountPrice(config.mountType);
     
-    // Frame pricing - get from inventory
-    price += getFramePrice(config.frame);
+    // Frame pricing - size-based pricing
+    price += getFramePrice(config.frame, cleanSize);
     
     // Rush order pricing
     if (config.rushOrder) {
@@ -1444,6 +1501,61 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleMarketplacePhotoSelect = async (photo: any) => {
+    try {
+      console.log('📸 Marketplace photo selected:', photo.id, photo.title);
+      
+      // Store the photographer info for later sales tracking
+      setMarketplacePhotoId(photo.id);
+      
+      // Load the marketplace photo
+      const imageUrl = photo.s3Url;
+      
+      // Create an image to detect dimensions
+      const img = new Image();
+      img.onload = () => {
+        setOriginalImageDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        });
+        
+        // Detect orientation from image
+        const isPortrait = img.naturalHeight > img.naturalWidth;
+        setOrientation(isPortrait ? 'portrait' : 'landscape');
+        
+        // Initialize transform history
+        const initialTransform = {
+          scale: 1,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          flipX: false,
+          flipY: false,
+        };
+        setImageTransform(initialTransform);
+        setTransformHistory([initialTransform]);
+        setHistoryIndex(0);
+      };
+      img.src = imageUrl;
+      
+      setConfig({ ...config, image: imageUrl });
+      setPreviewImage(imageUrl);
+      setCompletedSteps([1]);
+      setCurrentStep(2);
+      
+      setToast({
+        message: `Selected "${photo.title}" by ${photo.photographerName}`,
+        type: 'success'
+      });
+    } catch (err: any) {
+      console.error('❌ Failed to load marketplace photo:', err);
+      setToast({
+        message: 'Failed to load photo from marketplace',
+        type: 'error'
+      });
+    }
   };
 
   const removeImage = () => {
@@ -2329,31 +2441,65 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="text-center py-16"
+                className="py-16"
               >
-                <Upload className="w-16 h-16 mx-auto mb-6 text-[#ff6b35]" />
-                <h3 className="text-3xl mb-4 text-white">Upload Your Image</h3>
-                <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                  Choose a high-resolution image for the best results. We accept JPG, PNG, and TIFF formats.
-                </p>
-                <div
-                  className={`border-2 border-dashed border-[#ff6b35]/50 rounded-xl p-12 hover:border-[#ff6b35] transition-colors cursor-pointer ${
-                    isDragging ? 'border-[#ff6b35] bg-[#ff6b35]/10' : ''
-                  }`}
-                  onClick={handleUploadClick}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <p className="text-gray-500">Click to browse or drag and drop</p>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileInputChange}
-                    accept="image/*"
-                  />
+                <div className="text-center mb-8">
+                  <Upload className="w-16 h-16 mx-auto mb-6 text-[#ff6b35]" />
+                  <h3 className="text-3xl mb-4 text-white">Upload Your Image</h3>
+                  <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                    Choose a high-resolution image for the best results. We accept JPG, PNG, and TIFF formats.
+                  </p>
+                  <div
+                    className={`border-2 border-dashed border-[#ff6b35]/50 rounded-xl p-12 hover:border-[#ff6b35] transition-colors cursor-pointer ${
+                      isDragging ? 'border-[#ff6b35] bg-[#ff6b35]/10' : ''
+                    }`}
+                    onClick={handleUploadClick}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <p className="text-gray-500">Click to browse or drag and drop</p>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={handleFileInputChange}
+                      accept="image/*"
+                    />
+                  </div>
+
+                  {/* OR Divider */}
+                  <div className="flex items-center gap-4 my-8 max-w-md mx-auto">
+                    <div className="flex-1 h-px bg-[#2a2a2a]"></div>
+                    <span className="text-gray-500 text-sm">OR</span>
+                    <div className="flex-1 h-px bg-[#2a2a2a]"></div>
+                  </div>
+
+                  {/* Browse Stock Photos Button */}
+                  <motion.button
+                    onClick={() => setShowMarketplace(true)}
+                    className="px-8 py-4 bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white rounded-xl hover:shadow-xl hover:shadow-[#ff6b35]/30 transition-all font-semibold text-lg flex items-center gap-3 mx-auto"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Camera className="w-5 h-5" />
+                    Browse Stock Photos
+                  </motion.button>
+                  <p className="text-gray-500 text-sm mt-3">
+                    Choose from our curated collection
+                  </p>
                 </div>
+
+                {/* Image Quality Analyzer */}
+                {config.image && (
+                  <div className="max-w-2xl mx-auto">
+                    <ImageQualityAnalyzer
+                      imageUrl={config.image}
+                      selectedSize={config.size}
+                      onQualityAnalyzed={(quality) => setImageQuality(quality)}
+                    />
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -2368,10 +2514,10 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
                 <Settings className="w-16 h-16 mx-auto mb-6 text-[#ff6b35]" />
                 <h3 className="text-3xl mb-8 text-center text-white">Customize Your Print</h3>
                 
-                {/* Two Column Layout: Options + Preview */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Three Column Layout: Options + Preview + Price (Desktop) */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Left Column: Configuration Options */}
-                  <div className="space-y-6">
+                  <div className="space-y-6 lg:col-span-2 xl:col-span-1">
                     <div>
                       <label className="block mb-3 text-gray-300">Canvas Orientation</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -2446,12 +2592,12 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
                       className="w-full py-3 px-4 border-2 border-[#2a2a2a] bg-[#0a0a0a] text-gray-300 rounded-lg focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:border-gray-300 [data-theme='light']_&:text-black"
                     >
                       {availableSizes.map((size) => {
-                        const displayName = size.name.trim().replace(' x ', ' × ');
+                        const displayName = size.displayName || size.name.trim();
                         const outOfStock = size.quantity === 0;
                         return (
                           <option 
                             key={size.id} 
-                            value={displayName}
+                            value={size.name.trim()}
                             disabled={outOfStock}
                           >
                             {outOfStock ? `${displayName} - OUT OF STOCK` : displayName}
@@ -2984,6 +3130,20 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
                       </div>
                     )}
                   </div>
+
+                  {/* Right Column: Live Price Preview (Desktop) */}
+                  <div className="hidden lg:block lg:col-span-3 xl:col-span-1">
+                    <LivePricePreview
+                      size={config.size}
+                      finish={config.finish}
+                      mountType={config.mountType}
+                      frame={config.frame}
+                      rushOrder={config.rushOrder}
+                      basePrice={calculatePrice()}
+                      totalPrice={calculatePrice()}
+                      isSticky={true}
+                    />
+                  </div>
                 </div>
                 
                 {/* Step Navigation Buttons */}
@@ -3027,8 +3187,8 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
               <motion.div
 key="proof" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center py-8" >
 
-Review Your Proof
-This is how your final print will look. Ready to proceed to checkout?
+                <h2 className="text-3xl font-bold text-white mb-2">Review Your Proof</h2>
+                <p className="text-gray-400 mb-8">This is how your final print will look. Ready to proceed to checkout?</p>
 
             {/* Visual Proof Preview */}
             <div className="max-w-4xl mx-auto">
@@ -3134,7 +3294,7 @@ This is how your final print will look. Ready to proceed to checkout?
                   <div className="flex flex-col items-center gap-4">
                     {/* Dimensions Display */}
                     <div className="text-gray-400 text-sm mb-2">
-                      <span className="text-[#ff6b35]">{config.size}</span> • {config.finish} Finish • {config.mountType} • Frame: {config.frame}
+                      <span className="text-[#ff6b35]">{config.size}</span> • {config.finish} Finish • <span className="text-[#ff6b35] font-semibold">{config.mountType}</span> • Frame: {config.frame}
                     </div>
                     
                     {/* Best Fit Suggestion */}
@@ -3510,6 +3670,16 @@ This is how your final print will look. Ready to proceed to checkout?
     onClose={() => setShowRemoveConfirm(false)}
     onConfirm={confirmRemoveImage}
   />
+
+  {/* Marketplace Browse Modal */}
+  <AnimatePresence>
+    {showMarketplace && (
+      <MarketplaceBrowsePage
+        onClose={() => setShowMarketplace(false)}
+        onSelectPhoto={handleMarketplacePhotoSelect}
+      />
+    )}
+  </AnimatePresence>
 
   {/* Toast Notifications */}
   <AnimatePresence>

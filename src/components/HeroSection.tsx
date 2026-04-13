@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { X } from 'lucide-react';
 
 export function HeroSection() {
   const [showPreview, setShowPreview] = useState(false);
@@ -74,7 +74,7 @@ export function HeroSection() {
         <div className="w-full lg:w-1/2">
           {/* Left Side - Text Content (Static) */}
           <motion.div
-            className="space-y-6"
+            className="space-y-8"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
@@ -83,26 +83,47 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 }}
+              className="space-y-6"
             >
               <h1 className="text-5xl md:text-7xl text-black leading-tight dark:text-white">
                 <span className="text-[#ff6b35] font-black uppercase tracking-wider" style={{ fontFamily: 'Impact, "Arial Black", "Franklin Gothic Bold", sans-serif', letterSpacing: '0.1em', textShadow: '0 0 2px black, 0 0 2px black, 0 0 2px black', WebkitTextStroke: '1px black' }}>Bespoke Metal Prints</span>
               </h1>
               
               {/* SEO-friendly subtitle */}
-              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mt-4">
+              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">
                 HD Metal Prints | Nationwide Shipping
               </p>
             </motion.div>
 
             <motion.div
-              className="flex items-center gap-2"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
             >
-              <Sparkles className="w-6 h-6 text-[#ff6b35]" />
-              <p className="text-xl text-gray-700 dark:text-gray-300">
+              <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 leading-relaxed">
                 Your most cherished memories, beautifully printed on durable Aluminum
+              </p>
+            </motion.div>
+
+            {/* Social Proof */}
+            <motion.div
+              className="flex items-center gap-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+            >
+              <div className="flex -space-x-2">
+                {['😊', '🎨', '⭐', '💯'].map((emoji, i) => (
+                  <div 
+                    key={i}
+                    className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff6b35] to-[#ff8c42] flex items-center justify-center text-sm border-2 border-white dark:border-black"
+                  >
+                    {emoji}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium">
+                Loved by <span className="text-[#ff6b35] font-bold">1,900+ Happy Customers</span>
               </p>
             </motion.div>
 

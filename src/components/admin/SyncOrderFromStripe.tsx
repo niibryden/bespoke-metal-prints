@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 interface SyncOrderFromStripeProps {
   orderId: string;

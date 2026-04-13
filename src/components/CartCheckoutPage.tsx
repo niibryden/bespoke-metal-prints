@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Package, MapPin, CheckCircle, ArrowLeft, Loader2, Trash2, LogIn, UserPlus } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
-import logo from 'figma:asset/503d36cae9f0d312a29050db106ff5a907487708.png';
 import { OrderConfirmation } from './OrderConfirmation';
 import { StripePaymentForm } from './StripePaymentForm';
+import { TrustBadges } from './TrustBadges';
 import { getShippingDimensions } from '../utils/shipping-dimensions';
 import { useCart } from '../contexts/CartContext';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -269,25 +269,29 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
     setDiscountError(null);
 
     try {
-      // Client-side validation for known discount codes
       const upperCode = discountCode.trim().toUpperCase();
       
-      if (upperCode === 'WELCOME10') {
+      // Call server to validate discount code
+      const response = await fetch(`${serverUrl}/checkout/validate-discount`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify({ code: upperCode }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
         setAppliedDiscount({ 
-          code: 'WELCOME10', 
-          type: 'percentage', 
-          value: 10 
-        });
-        setDiscountError(null);
-      } else if (upperCode === 'FREESHIP') {
-        setAppliedDiscount({ 
-          code: 'FREESHIP', 
-          type: 'fixed', 
-          value: 0 
+          code: upperCode, 
+          type: data.discount.type, 
+          value: data.discount.value
         });
         setDiscountError(null);
       } else {
-        setDiscountError('Invalid discount code');
+        setDiscountError(data.error || 'Invalid discount code');
         setAppliedDiscount(null);
       }
     } catch (error) {
@@ -490,6 +494,7 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
             })),
             itemCount: items.length,
           },
+          items: items, // Send full cart items with images for S3 upload
           amount: total,
           basePrice: basePrice,
           shippingRate: selectedRate,
@@ -557,7 +562,7 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
             Back
           </button>
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Bespoke Metal Prints" className="h-8 sm:h-10 w-auto mix-blend-screen [data-theme='light']_&:mix-blend-darken" />
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Bespoke Metal Prints</h2>
           </div>
           <div className="w-20" /> {/* Spacer for centering */}
         </div>
@@ -717,6 +722,7 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
                     placeholder="Email"
                     value={shippingAddress.email}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, email: e.target.value })}
+                    autoComplete="email"
                     className="col-span-2 px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <input
@@ -724,6 +730,7 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
                     placeholder="Street Address"
                     value={shippingAddress.street1}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, street1: e.target.value })}
+                    autoComplete="shipping address-line1"
                     className="col-span-2 px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <input
@@ -749,9 +756,11 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
                   />
                   <input
                     type="text"
+                    inputMode="numeric"
                     placeholder="ZIP Code"
                     value={shippingAddress.zip}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, zip: e.target.value })}
+                    autoComplete="shipping postal-code"
                     className="px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <select
@@ -913,6 +922,11 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
             >
+              {/* Trust Badges */}
+              <div className="mb-8">
+                <TrustBadges variant="checkout" />
+              </div>
+
               <StripePaymentForm
                 clientSecret={clientSecret}
                 amount={total}

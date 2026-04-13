@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Loader, AlertCircle, CheckCircle, FolderOpen } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 interface S3Folder {
   s3FolderId: string;

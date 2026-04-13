@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, ExternalLink, Copy, FileWarning } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 interface CorsInfo {
   bucketName: string;

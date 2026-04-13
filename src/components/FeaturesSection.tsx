@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Palette, Maximize2, Magnet, Frame, Check, Sparkles } from 'lucide-react';
+import { Palette, Maximize2, Magnet, Frame, Check } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -75,8 +75,9 @@ export function FeaturesSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-6 h-6 text-[#ff6b35]" />
+          <motion.div 
+            className="inline-block mb-4"
+          >
             <motion.span 
               className="text-[#ff6b35] uppercase tracking-wider text-sm font-semibold"
               animate={{ opacity: [0.7, 1, 0.7] }}
@@ -84,8 +85,7 @@ export function FeaturesSection() {
             >
               Premium Customization
             </motion.span>
-            <Sparkles className="w-6 h-6 text-[#ff6b35]" />
-          </div>
+          </motion.div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl text-black mb-4 dark:text-white">
             Tailor Every Detail
           </h2>

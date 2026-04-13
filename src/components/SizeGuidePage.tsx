@@ -422,7 +422,7 @@ export function SizeGuidePage({ onClose }: SizeGuidePageProps) {
           </div>
         </section>
 
-        {/* Pricing with Frame Options */}
+        {/* Frame Pricing Table */}
         <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-8 mb-16">
           <h2 className="text-2xl text-gray-900 dark:text-white mb-6 text-center">
             Frame Pricing by Size
@@ -433,9 +433,7 @@ export function SizeGuidePage({ onClose }: SizeGuidePageProps) {
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Size</th>
                   <th className="text-right py-3 px-4 text-gray-700 dark:text-gray-300">Base Print</th>
-                  <th className="text-right py-3 px-4 text-gray-700 dark:text-gray-300">+ Black Frame</th>
-                  <th className="text-right py-3 px-4 text-gray-700 dark:text-gray-300">+ Gold Frame</th>
-                  <th className="text-right py-3 px-4 text-gray-700 dark:text-gray-300">+ Wood Frame</th>
+                  <th className="text-right py-3 px-4 text-gray-700 dark:text-gray-300">+ Any Frame</th>
                 </tr>
               </thead>
               <tbody>
@@ -443,57 +441,48 @@ export function SizeGuidePage({ onClose }: SizeGuidePageProps) {
                   <td className="py-3 px-4 text-gray-900 dark:text-white">5" × 7"</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$25.00</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">Not Available</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">Not Available</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">Not Available</td>
                 </tr>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <td className="py-3 px-4 text-gray-900 dark:text-white">12" × 8"</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$49.99</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$139.98</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$189.97</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$159.98</td>
+                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$99.98</td>
                 </tr>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <td className="py-3 px-4 text-gray-900 dark:text-white">17" × 11"</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$69.99</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$159.98</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$209.97</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$179.98</td>
+                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$129.98</td>
                 </tr>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <td className="py-3 px-4 text-gray-900 dark:text-white">24" × 16"</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$109.99</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$199.98</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$249.97</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$219.98</td>
                 </tr>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <td className="py-3 px-4 text-gray-900 dark:text-white">30" × 20"</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$149.99</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$239.98</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$289.97</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$259.98</td>
                 </tr>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <td className="py-3 px-4 text-gray-900 dark:text-white">36" × 24"</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$199.99</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$289.98</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$339.97</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$309.98</td>
+                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$339.98</td>
                 </tr>
                 <tr>
                   <td className="py-3 px-4 text-gray-900 dark:text-white">40" × 30"</td>
                   <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$269.99</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$359.98</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$409.97</td>
-                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$379.98</td>
+                  <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">$439.98</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-500 text-center mt-4">
-            💎 Use code <span className="text-[#ff6b35] font-semibold">WELCOME10</span> for 10% OFF all sizes
-          </p>
+          <div className="mt-4 space-y-2">
+            <p className="text-sm text-gray-500 dark:text-gray-500 text-center">
+              💎 Use code <span className="text-[#ff6b35] font-semibold">WELCOME10</span> for 10% OFF all sizes
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center italic">
+              All frame options (Black, Gold, Natural Wood) are the same price for each size
+            </p>
+          </div>
         </div>
 
         {/* CTA */}

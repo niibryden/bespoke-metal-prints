@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, MapPin, Truck, CheckCircle, Search, Loader2, ExternalLink, Calendar, Info, X, Weight, User, FileText } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
-import logo from 'figma:asset/503d36cae9f0d312a29050db106ff5a907487708.png';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface TrackingPageProps {
@@ -60,6 +59,8 @@ export function TrackingPage({ onClose, initialTrackingNumber = '', initialOrder
   const [inputFocused, setInputFocused] = useState(false);
   const [orderInfo, setOrderInfo] = useState<any>(null);
   const [liveTrackingStatus, setLiveTrackingStatus] = useState<string | null>(null);
+  const [emailOrders, setEmailOrders] = useState<any[]>([]);
+  const [showEmailResults, setShowEmailResults] = useState(false);
 
   const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-3e3a9cd7`;
 
@@ -184,20 +185,52 @@ export function TrackingPage({ onClose, initialTrackingNumber = '', initialOrder
     }
   };
 
+  const trackByEmail = async (email: string) => {
+    try {
+      console.log(`📧 Tracking orders by email: ${email}`);
+      const response = await fetch(`${serverUrl}/tracking/by-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || 'No orders found for this email');
+      }
+
+      const data = await response.json();
+      setEmailOrders(data.orders);
+      setShowEmailResults(true);
+      setError(null);
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   const trackPackage = async () => {
     if (!trackingNumber.trim()) {
-      setError('Please enter a tracking number or order ID');
+      setError('Please enter a tracking number, order ID, or email address');
       return;
     }
 
     setLoading(true);
     setError(null);
+    setShowEmailResults(false);
+    setEmailOrders([]);
 
     try {
-      // Check if input looks like an order ID (starts with "ord_")
-      if (trackingNumber.startsWith('ord_')) {
+      // Check if input looks like an email
+      if (trackingNumber.includes('@')) {
+        await trackByEmail(trackingNumber);
+      } else if (trackingNumber.startsWith('ord_')) {
+        // Order ID
         await loadOrderTracking(trackingNumber);
       } else {
+        // Tracking number
         await trackPackageByNumber(trackingNumber);
       }
     } catch (err: any) {
@@ -334,10 +367,10 @@ export function TrackingPage({ onClose, initialTrackingNumber = '', initialOrder
               <Info className="w-5 h-5 text-[#ff6b35] mt-1 flex-shrink-0" />
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Enter your order ID or tracking number to see real-time updates on your order's journey
+                  Enter your order ID, tracking number, or email address to track your order
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-500">
-                  💡 Tip: Order IDs start with "ord_" and tracking numbers are sent via email after shipping
+                  💡 Guest orders: Use your email address to view all your orders
                 </p>
               </div>
             </div>
@@ -352,7 +385,7 @@ export function TrackingPage({ onClose, initialTrackingNumber = '', initialOrder
                   onKeyPress={handleKeyPress}
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setInputFocused(false)}
-                  placeholder="Enter order ID or tracking number..."
+                  placeholder="Enter order ID, tracking number, or email..."
                   className={`w-full pl-12 pr-4 py-4 bg-white dark:bg-[#1a1a1a] border-2 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 outline-none transition-all ${
                     inputFocused 
                       ? 'border-[#ff6b35] ring-4 ring-[#ff6b35]/10' 
@@ -400,10 +433,100 @@ export function TrackingPage({ onClose, initialTrackingNumber = '', initialOrder
           )}
         </AnimatePresence>
 
+        {/* Email-based order results */}
+        <AnimatePresence>
+          {showEmailResults && emailOrders.length > 0 && (
+            <motion.div
+              className="mb-8 space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+            >
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Package className="w-6 h-6 text-[#ff6b35]" />
+                Your Orders ({emailOrders.length})
+              </h2>
+              
+              <div className="grid gap-4">
+                {emailOrders.map((order) => (
+                  <motion.div
+                    key={order.orderId}
+                    className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a] overflow-hidden hover:shadow-lg transition-shadow"
+                    whileHover={{ scale: 1.01 }}
+                  >
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Order ID</p>
+                          <p className="font-mono text-gray-900 dark:text-white">{order.orderId}</p>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          order.status === 'delivered' ? 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400' :
+                          order.status === 'shipped' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400' :
+                          'bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400'
+                        }`}>
+                          {order.status === 'delivered' ? 'Delivered' : 
+                           order.status === 'shipped' ? 'Shipped' : 
+                           'Processing'}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Order Date</p>
+                          <p className="text-gray-900 dark:text-white">{formatDate(order.createdAt)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+                          <p className="text-gray-900 dark:text-white">${order.amount.toFixed(2)}</p>
+                        </div>
+                        {order.orderDetails && (
+                          <>
+                            <div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Size</p>
+                              <p className="text-gray-900 dark:text-white">{order.orderDetails.size}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Finish</p>
+                              <p className="text-gray-900 dark:text-white">{order.orderDetails.finish}</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      
+                      {order.trackingNumber && (
+                        <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-200 dark:border-[#2a2a2a]">
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-[#ff6b35]" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {order.trackingCarrier || 'USPS'}: {order.trackingNumber}
+                            </span>
+                          </div>
+                          {order.trackingUrl && (
+                            <a
+                              href={order.trackingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-sm text-[#ff6b35] hover:text-[#ff8555] transition-colors"
+                            >
+                              Track
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Tracking Results */}
         <AnimatePresence mode="wait">
           {/* Show order info when loaded by order ID */}
-          {orderInfo && orderInfo.trackingNumber && !trackingData && (
+          {orderInfo && orderInfo.trackingNumber && !trackingData && !showEmailResults && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

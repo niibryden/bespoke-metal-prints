@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { OrderManagement } from './admin/OrderManagement';
-import { AdminSettings } from './admin/AdminSettings';
+import { AdminMarketplaceApprovals } from './AdminMarketplaceApprovals';
+import { AdminOverview } from './admin/AdminOverview';
 import { PhotoManagement } from './admin/PhotoManagement';
 import { InventoryManagement } from './admin/InventoryManagement';
-import { AdminOverview } from './admin/AdminOverview';
+import { OrderManagement } from './admin/OrderManagement';
 import { DataCleanup } from './admin/DataCleanup';
+import { ExportData } from './admin/ExportData';
+import { AdminSettings } from './admin/AdminSettings';
 import { S3FolderManager } from './admin/S3FolderManager';
 import { ImageLibrary } from './admin/ImageLibrary';
-import { ExportData } from './admin/ExportData';
+import { DiscountManagement } from './admin/DiscountManagement';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -19,7 +21,9 @@ import {
   Download,
   Database,
   FolderOpen,
-  Images
+  Images,
+  Tag,
+  Camera
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -27,7 +31,7 @@ interface AdminDashboardProps {
   adminInfo: { email: string; role: string; name: string; permissions: any; accessToken: string };
 }
 
-type ActiveTab = 'overview' | 'photos' | 'inventory' | 'orders' | 'settings' | 'export' | 'cleanup' | 's3-folders' | 'image-library';
+type ActiveTab = 'overview' | 'photos' | 'inventory' | 'orders' | 'settings' | 'export' | 'cleanup' | 's3-folders' | 'image-library' | 'discounts' | 'marketplace';
 
 export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
@@ -52,13 +56,11 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard, permission: 'canViewOrders' },
     { id: 'orders' as const, label: 'Orders', icon: ShoppingBag, permission: 'canViewOrders' },
-    { id: 'photos' as const, label: 'Manage Photos', icon: Image, permission: 'canViewOrders' },
+    { id: 'photos' as const, label: 'Stock Photos', icon: Image, permission: 'canViewOrders' },
     { id: 'inventory' as const, label: 'Inventory', icon: Package, permission: 'canManageInventory' },
-    { id: 'cleanup' as const, label: 'Database Cleanup', icon: Database, permission: 'canViewOrders' },
-    { id: 'export' as const, label: 'Export Data', icon: Download, permission: 'canExportData' },
+    { id: 'discounts' as const, label: 'Discounts', icon: Tag, permission: 'canManageInventory' },
     { id: 'settings' as const, label: 'Settings', icon: Settings, permission: 'canViewOrders' },
-    { id: 's3-folders' as const, label: 'S3 Folders', icon: FolderOpen, permission: 'canManageInventory' },
-    { id: 'image-library' as const, label: 'Image Library', icon: Images, permission: 'canManageInventory' },
+    { id: 'marketplace' as const, label: 'Marketplace Approvals', icon: Camera, permission: 'canManageInventory' },
   ].filter(tab => !tab.permission || adminInfo.permissions?.[tab.permission]);
 
   console.log('✅ AdminDashboard - tabs after filter:', tabs);
@@ -148,6 +150,8 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
             {activeTab === 'settings' && <AdminSettings adminInfo={adminInfo} />}
             {activeTab === 's3-folders' && <S3FolderManager adminInfo={adminInfo} />}
             {activeTab === 'image-library' && <ImageLibrary adminInfo={adminInfo} />}
+            {activeTab === 'discounts' && <DiscountManagement adminInfo={adminInfo} />}
+            {activeTab === 'marketplace' && <AdminMarketplaceApprovals adminEmail={adminInfo.email} />}
           </div>
         </div>
       </div>

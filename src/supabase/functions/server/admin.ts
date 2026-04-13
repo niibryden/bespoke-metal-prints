@@ -352,10 +352,11 @@ async function updateOrderIndex(orderMeta: any) {
     // Add new entry at beginning
     filtered.unshift(orderMeta);
     
-    // Keep only last 500 orders in index
-    const trimmed = filtered.slice(0, 500);
+    // Keep only last 200 orders in index (reduced from 500 to prevent memory issues)
+    const trimmed = filtered.slice(0, 200);
     
     await kv.set('order-index', trimmed);
+    console.log(`📋 Order index updated: ${trimmed.length} orders`);
   } catch (error) {
     console.error('Error updating order index:', error);
   }
@@ -402,6 +403,14 @@ adminApp.get('/make-server-3e3a9cd7/admin/orders', async (c) => {
       console.log('⚠️ Order index is empty, initializing...');
     }
     
+    // Limit index size to prevent memory issues (max 200 orders)
+    if (index.length > 200) {
+      console.log(`⚠️ Index too large (${index.length} orders), trimming to 200`);
+      index = index.slice(0, 200);
+      // Save trimmed index back
+      await kv.set('order-index', index);
+    }
+    
     // Filter: December 2025+ only, exclude cancelled/incomplete
     const cutoffDate = new Date('2025-12-01T00:00:00Z');
     const filteredOrders = index.filter((order: any) => {
@@ -418,9 +427,12 @@ adminApp.get('/make-server-3e3a9cd7/admin/orders', async (c) => {
       const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA; // Most recent first
     });
+    
+    // Limit to 100 orders in response to reduce payload size
+    const limitedOrders = filteredOrders.slice(0, 100);
 
-    console.log(`📊 Returning ${filteredOrders.length} orders from index (total: ${index.length})`);
-    return c.json({ orders: filteredOrders });
+    console.log(`📊 Returning ${limitedOrders.length} orders from index (filtered: ${filteredOrders.length}, total: ${index.length})`);
+    return c.json({ orders: limitedOrders });
   } catch (error: any) {
     console.error('Admin orders error:', error);
     return c.json({ error: 'Failed to fetch orders', details: error.message }, 500);
@@ -699,7 +711,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/rebuild-index', async (c) => {
       deliveredAt: order.deliveredAt,
     })).sort((a: any, b: any) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    ).slice(0, 200);  // Limit to 200 most recent orders to prevent memory issues
     
     await kv.set('order-index', index);
     
@@ -878,7 +890,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/sync-pending-orders', async (c) => {
           const index = await kv.get('order-index') || [];
           const filtered = index.filter((o: any) => o.id !== orderMeta.id);
           filtered.unshift(orderMeta);
-          await kv.set('order-index', filtered.slice(0, 500));
+          await kv.set('order-index', filtered.slice(0, 200));
           
           console.log(`✅ Updated ${order.id} to paid`);
           updatedCount++;
@@ -1193,6 +1205,129 @@ adminApp.put('/make-server-3e3a9cd7/admin/collections/:collectionId/rename', asy
   }
 });
 
+// Upload image to collection
+adminApp.post('/make-server-3e3a9cd7/admin/collections/:collectionId/images', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const collectionId = c.req.param('collectionId');
+    
+    // Check for AWS credentials
+    const AWS_ACCESS_KEY_ID = Deno.env.get('AWS_ACCESS_KEY_ID');
+    const AWS_SECRET_ACCESS_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+    const AWS_S3_BUCKET_NAME = Deno.env.get('AWS_S3_BUCKET_NAME');
+    const AWS_REGION = Deno.env.get('AWS_REGION') || 'us-east-1';
+    
+    if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_S3_BUCKET_NAME) {
+      return c.json({ error: 'AWS S3 not configured. Please set AWS credentials in Supabase Edge Function Secrets.' }, 400);
+    }
+
+    console.log('📤 Upload to collection:', collectionId);
+    console.log('🔑 AWS Bucket:', AWS_S3_BUCKET_NAME);
+    console.log('🌍 AWS Region:', AWS_REGION);
+
+    // Get the collection
+    const collections = await kv.get('stock:collections') || [];
+    const collection = collections.find((col: any) => col.id === collectionId);
+    
+    if (!collection) {
+      return c.json({ error: 'Collection not found' }, 404);
+    }
+
+    // Parse multipart form data
+    const formData = await c.req.formData();
+    const imageFile = formData.get('image') as File;
+    
+    if (!imageFile) {
+      return c.json({ error: 'No image file provided' }, 400);
+    }
+
+    console.log('📷 Image file:', imageFile.name, imageFile.size, 'bytes');
+
+    // Import AWS SDK
+    const { S3Client, PutObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
+    
+    // Create S3 client
+    const s3Client = new S3Client({
+      region: AWS_REGION,
+      credentials: {
+        accessKeyId: AWS_ACCESS_KEY_ID,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+      },
+    });
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(7);
+    const extension = imageFile.name.split('.').pop() || 'jpg';
+    const baseFileName = `${timestamp}-${randomStr}`;
+    
+    // Convert file to buffer
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    // Upload original (full resolution for printing) - PRIVATE
+    const originalKey = `stock/original/${collection.name}/${baseFileName}.${extension}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: AWS_S3_BUCKET_NAME,
+      Key: originalKey,
+      Body: buffer,
+      ContentType: imageFile.type,
+    }));
+
+    const originalUrl = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${originalKey}`;
+    console.log('✅ Original uploaded (private):', originalUrl);
+
+    // Upload web version (optimized for display) - PUBLIC
+    const webKey = `stock/web/${collection.name}/${baseFileName}.${extension}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: AWS_S3_BUCKET_NAME,
+      Key: webKey,
+      Body: buffer,
+      ContentType: imageFile.type,
+    }));
+
+    const webUrl = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${webKey}`;
+    console.log('✅ Web version uploaded (public):', webUrl);
+
+    // Add to collection
+    const newImage = {
+      id: timestamp.toString(),
+      name: imageFile.name,
+      url: webUrl, // Use web version as default
+      uploadedAt: new Date().toISOString(),
+    };
+
+    if (!collection.images) {
+      collection.images = [];
+    }
+    collection.images.push(newImage);
+    collection.updatedAt = new Date().toISOString();
+
+    // Save updated collections
+    await kv.set('stock:collections', collections);
+
+    console.log('✅ Image added to collection database');
+
+    return c.json({ 
+      success: true, 
+      image: newImage,
+      originalUrl,
+      webUrl 
+    });
+
+  } catch (error: any) {
+    console.error('❌ Upload error:', error);
+    return c.json({ 
+      error: 'Failed to upload image', 
+      details: error.message 
+    }, 500);
+  }
+});
+
 // Get stock photos count
 adminApp.get('/make-server-3e3a9cd7/admin/stock-photos-count', async (c) => {
   const auth = await verifyAdmin(c.req.header('Authorization'));
@@ -1343,6 +1478,12 @@ adminApp.get('/make-server-3e3a9cd7/admin/s3-folders', async (c) => {
       return c.json({ error: 'AWS S3 not configured' }, 400);
     }
     
+    // Log credentials (masked for security)
+    console.log(`🔑 Using AWS credentials:`);
+    console.log(`   Access Key: ${AWS_ACCESS_KEY_ID.substring(0, 8)}...${AWS_ACCESS_KEY_ID.slice(-4)}`);
+    console.log(`   Bucket: ${AWS_S3_BUCKET_NAME}`);
+    console.log(`   Region: ${AWS_REGION}`);
+    
     // Import AWS SDK
     const { S3Client, ListObjectsV2Command } = await import('npm:@aws-sdk/client-s3@3');
     
@@ -1355,10 +1496,10 @@ adminApp.get('/make-server-3e3a9cd7/admin/s3-folders', async (c) => {
       },
     });
     
-    // List objects in bucket
+    // List objects in bucket - check web folder
     const listCommand = new ListObjectsV2Command({
       Bucket: AWS_S3_BUCKET_NAME,
-      Prefix: 'stock-photos/',
+      Prefix: 'stock/web/',
       Delimiter: '/', // This helps us get folder-level results
     });
     
@@ -1372,7 +1513,7 @@ adminApp.get('/make-server-3e3a9cd7/admin/s3-folders', async (c) => {
     for (const prefix of folderPrefixes) {
       if (!prefix.Prefix) continue;
       
-      const folderName = prefix.Prefix.replace('stock-photos/', '').replace('/', '');
+      const folderName = prefix.Prefix.replace('stock/web/', '').replace('/', '');
       
       // List files in this folder
       const folderListCommand = new ListObjectsV2Command({
@@ -1405,7 +1546,26 @@ adminApp.get('/make-server-3e3a9cd7/admin/s3-folders', async (c) => {
     
   } catch (error: any) {
     console.error('❌ List folders error:', error);
-    return c.json({ error: 'Failed to list folders', details: error.message }, 500);
+    
+    // Provide more helpful error messages
+    let errorMessage = 'Failed to list folders';
+    let details = error.message;
+    
+    if (error.message?.includes('Access Key') || error.message?.includes('InvalidAccessKeyId')) {
+      errorMessage = 'Invalid AWS credentials';
+      details = 'The AWS Access Key ID is invalid or does not exist. Please update your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in the Supabase dashboard under Edge Function Secrets.';
+    } else if (error.message?.includes('bucket') || error.message?.includes('NoSuchBucket')) {
+      errorMessage = 'Invalid S3 bucket';
+      details = `The S3 bucket "${Deno.env.get('AWS_S3_BUCKET_NAME')}" does not exist or you do not have permission to access it. Please verify AWS_S3_BUCKET_NAME.`;
+    } else if (error.message?.includes('region')) {
+      errorMessage = 'Invalid AWS region';
+      details = 'The AWS region is incorrect. Please verify AWS_REGION matches your S3 bucket region.';
+    } else if (error.message?.includes('SignatureDoesNotMatch')) {
+      errorMessage = 'Invalid AWS Secret Key';
+      details = 'The AWS Secret Access Key is incorrect. Please verify AWS_SECRET_ACCESS_KEY.';
+    }
+    
+    return c.json({ error: errorMessage, details: details }, 500);
   }
 });
 
@@ -1447,55 +1607,58 @@ adminApp.post('/make-server-3e3a9cd7/admin/s3-rename-folder', async (c) => {
       },
     });
     
-    // List all files in the old folder
-    const listCommand = new ListObjectsV2Command({
-      Bucket: AWS_S3_BUCKET_NAME,
-      Prefix: `stock-photos/${oldFolderName}/`,
-    });
-    
-    const listResponse = await s3Client.send(listCommand);
-    const objects = (listResponse.Contents || []).filter(obj => obj.Key && !obj.Key.endsWith('/'));
-    
-    console.log(`📦 Found ${objects.length} files to move`);
-    
-    let copiedCount = 0;
-    let deletedCount = 0;
+    // List and move files from BOTH web and original folders
+    const prefixes = ['stock/web/', 'stock/original/'];
+    let totalCopied = 0;
+    let totalDeleted = 0;
     const errors: string[] = [];
     
-    // Copy each file to new location and delete old
-    for (const obj of objects) {
-      if (!obj.Key) continue;
+    for (const prefix of prefixes) {
+      const listCommand = new ListObjectsV2Command({
+        Bucket: AWS_S3_BUCKET_NAME,
+        Prefix: `${prefix}${oldFolderName}/`,
+      });
       
-      try {
-        const fileName = obj.Key.split('/').pop();
-        const newKey = `stock-photos/${newFolderName}/${fileName}`;
+      const listResponse = await s3Client.send(listCommand);
+      const objects = (listResponse.Contents || []).filter(obj => obj.Key && !obj.Key.endsWith('/'));
+      
+      console.log(`📦 Found ${objects.length} files in ${prefix}${oldFolderName}/`);
+      
+      // Copy each file to new location and delete old
+      for (const obj of objects) {
+        if (!obj.Key) continue;
         
-        // Copy to new location
-        await s3Client.send(new CopyObjectCommand({
-          Bucket: AWS_S3_BUCKET_NAME,
-          CopySource: `${AWS_S3_BUCKET_NAME}/${obj.Key}`,
-          Key: newKey,
-        }));
-        
-        copiedCount++;
-        console.log(`✅ Copied: ${obj.Key} → ${newKey}`);
-        
-        // Delete old file
-        await s3Client.send(new DeleteObjectCommand({
-          Bucket: AWS_S3_BUCKET_NAME,
-          Key: obj.Key,
-        }));
-        
-        deletedCount++;
-        console.log(`🗑️ Deleted: ${obj.Key}`);
-        
-      } catch (fileError: any) {
-        console.error(`❌ Error moving ${obj.Key}:`, fileError);
-        errors.push(`${obj.Key}: ${fileError.message}`);
+        try {
+          const fileName = obj.Key.split('/').pop();
+          const newKey = `${prefix}${newFolderName}/${fileName}`;
+          
+          // Copy to new location
+          await s3Client.send(new CopyObjectCommand({
+            Bucket: AWS_S3_BUCKET_NAME,
+            CopySource: `${AWS_S3_BUCKET_NAME}/${obj.Key}`,
+            Key: newKey,
+          }));
+          
+          totalCopied++;
+          console.log(`✅ Copied: ${obj.Key} → ${newKey}`);
+          
+          // Delete old file
+          await s3Client.send(new DeleteObjectCommand({
+            Bucket: AWS_S3_BUCKET_NAME,
+            Key: obj.Key,
+          }));
+          
+          totalDeleted++;
+          console.log(`🗑️ Deleted: ${obj.Key}`);
+          
+        } catch (fileError: any) {
+          console.error(`❌ Error moving ${obj.Key}:`, fileError);
+          errors.push(`${obj.Key}: ${fileError.message}`);
+        }
       }
     }
     
-    console.log(`✅ Rename complete: ${copiedCount} copied, ${deletedCount} deleted`);
+    console.log(`✅ Rename complete: ${totalCopied} copied, ${totalDeleted} deleted`);
     
     // UPDATE COLLECTIONS IN DATABASE TO REFLECT NEW FOLDER NAME
     try {
@@ -1509,15 +1672,15 @@ adminApp.post('/make-server-3e3a9cd7/admin/s3-rename-folder', async (c) => {
       for (const collection of collections) {
         let collectionModified = false;
         
-        // Update image URLs in this collection
+        // Update image URLs in this collection (check both old and new patterns)
         if (collection.images && Array.isArray(collection.images)) {
           for (const image of collection.images) {
-            if (image.url && image.url.includes(`stock-photos/${oldFolderName}/`)) {
-              // Replace old folder name with new folder name in URL
-              image.url = image.url.replace(
-                `stock-photos/${oldFolderName}/`,
-                `stock-photos/${newFolderName}/`
-              );
+            // Update URLs from old pattern to new pattern
+            if (image.url && (image.url.includes(`stock-photos/${oldFolderName}/`) || image.url.includes(`stock/web/${oldFolderName}/`))) {
+              // Replace with new folder name
+              image.url = image.url
+                .replace(`stock-photos/${oldFolderName}/`, `stock/web/${newFolderName}/`)
+                .replace(`stock/web/${oldFolderName}/`, `stock/web/${newFolderName}/`);
               urlsUpdated++;
               collectionModified = true;
             }
@@ -1604,7 +1767,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/recover-from-s3', async (c) => {
     do {
       const listCommand = new ListObjectsV2Command({
         Bucket: AWS_S3_BUCKET_NAME,
-        Prefix: 'stock-photos/',
+        Prefix: 'stock/web/', // Only scan web folder (public photos)
         MaxKeys: 1000, // AWS default/max
         ContinuationToken: continuationToken,
       });
@@ -1636,7 +1799,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/recover-from-s3', async (c) => {
         collectionsCreated: 0,
         photosRecovered: 0,
         photosSkipped: 0,
-        actions: ['No photos found in S3 bucket under stock-photos/ prefix'],
+        actions: ['No photos found in S3 bucket under stock/web/ prefix'],
       });
     }
     
@@ -1650,23 +1813,20 @@ adminApp.post('/make-server-3e3a9cd7/admin/recover-from-s3', async (c) => {
     for (const obj of objects) {
       if (!obj.Key || obj.Key.endsWith('/')) continue; // Skip folders
       
-      // Parse key: stock-photos/CollectionName/filename.jpg
+      // Parse key: stock/web/CollectionName/filename.jpg
       const parts = obj.Key.split('/');
       if (parts.length < 3) continue; // Invalid structure
       
-      const collectionName = parts[1];
+      const collectionName = parts[2]; // Changed from parts[1] to parts[2]
       const filename = parts[parts.length - 1];
       
-      // Skip .webp files - we only want original images
+      // Skip .webp files
       if (filename.endsWith('.webp')) {
         console.log(`⏭️ Skipping webp version: ${filename}`);
         continue;
       }
       
-      // Remove .original suffix from filename for cleaner display
-      const displayName = filename.replace('.original.', '.');
-      
-      // Build public URL
+      // Build public URL (web version is public)
       const photoUrl = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${obj.Key}`;
       
       if (!collectionMap.has(collectionName)) {
@@ -1675,7 +1835,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/recover-from-s3', async (c) => {
       
       collectionMap.get(collectionName)!.push({
         id: `photo_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        name: displayName,
+        name: filename,
         url: photoUrl,
         uploadedAt: obj.LastModified?.toISOString() || new Date().toISOString(),
       });
@@ -1980,7 +2140,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/generate-label/:orderId', async (c) =
     
     const filtered = index.filter((o: any) => o.id !== orderMeta.id);
     filtered.unshift(orderMeta);
-    await kv.set('order-index', filtered.slice(0, 500));
+    await kv.set('order-index', filtered.slice(0, 200));
 
     console.log(`✅ Shipping label generated for order ${orderId}`);
 
@@ -3014,5 +3174,11 @@ adminApp.get('/make-server-3e3a9cd7/admin/export/revenue', async (c) => {
     return c.json({ error: 'Failed to export revenue', details: error.message }, 500);
   }
 });
+
+// Import discount routes
+import discountApp from './discount.ts';
+
+// Mount discount routes
+adminApp.route('/', discountApp);
 
 export default adminApp;

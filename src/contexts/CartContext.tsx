@@ -11,6 +11,8 @@ export interface CartItem {
   price: number;
   thumbnail?: string;
   addedAt: number;
+  marketplacePhotoId?: string; // Track marketplace photos for royalty payments
+  quantity?: number; // Track quantity for multi-item orders
 }
 
 interface CartContextType {

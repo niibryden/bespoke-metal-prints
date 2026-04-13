@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sun, Moon, User, Menu, X, LogOut, Settings, ShoppingCart, ChevronDown } from 'lucide-react';
+import { Sun, Moon, User, Menu, X, LogOut, Settings, ShoppingCart, ChevronDown, BookOpen, Ruler, HelpCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { LoginPage } from './LoginPage';
 import { AccountPage } from './AccountPage';
 import { AccessibilitySettings } from './AccessibilitySettings';
 import { CartModal } from './CartModal';
+import { DarkModeToggleSwap } from './DarkModeToggle';
 import { useCart } from '../contexts/CartContext';
 import { getSupabaseClient } from '../utils/supabase/client';
 import logo from 'figma:asset/b87a44ea706a718f76149582796ccaf613512b6f.png';
@@ -270,61 +271,54 @@ export function Navigation({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50"
+                  className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-3 z-50"
                 >
-                  <button
-                    onClick={() => {
-                      setShowLearnDropdown(false);
-                      if (onSizeGuideClick) onSizeGuideClick();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors"
-                  >
-                    Size Guide
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowLearnDropdown(false);
-                      if (onHDMetalPrintGuideClick) onHDMetalPrintGuideClick();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors"
-                  >
-                    What is HD Metal Print?
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowLearnDropdown(false);
-                      if (onCareInstructionsClick) onCareInstructionsClick();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors"
-                  >
-                    Care Instructions
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowLearnDropdown(false);
-                      if (onFAQClick) onFAQClick();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors"
-                  >
-                    FAQ
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowLearnDropdown(false);
-                      if (onReviewsClick) onReviewsClick();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors"
-                  >
-                    Reviews
-                  </button>
+                  {/* Complete Guide */}
+                  <div className="px-3 mb-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Educational Resources</p>
+                  </div>
                   <button
                     onClick={() => {
                       setShowLearnDropdown(false);
                       if (onAboutClick) onAboutClick();
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors flex items-center gap-3"
                   >
-                    About Us
+                    <BookOpen className="w-5 h-5 text-[#ff6b35]" />
+                    <div>
+                      <div className="font-medium">Complete Guide</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">What is HD Metal Print, Care & More</div>
+                    </div>
+                  </button>
+                  
+                  {/* Size Guide */}
+                  <button
+                    onClick={() => {
+                      setShowLearnDropdown(false);
+                      if (onSizeGuideClick) onSizeGuideClick();
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors flex items-center gap-3"
+                  >
+                    <Ruler className="w-5 h-5 text-[#ff6b35]" />
+                    <div>
+                      <div className="font-medium">Size Guide</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Find your perfect dimensions</div>
+                    </div>
+                  </button>
+                  
+                  {/* FAQ */}
+                  <button
+                    onClick={() => {
+                      setShowLearnDropdown(false);
+                      if (onFAQClick) onFAQClick();
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#ff6b35] transition-colors flex items-center gap-3"
+                  >
+                    <HelpCircle className="w-5 h-5 text-[#ff6b35]" />
+                    <div>
+                      <div className="font-medium">FAQ</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Common questions answered</div>
+                    </div>
                   </button>
                 </motion.div>
               )}
@@ -348,13 +342,7 @@ export function Navigation({
               Login
             </button>
           )}
-          <button
-            onClick={toggleTheme}
-            className="text-black hover:text-[#ff6b35] transition-colors p-2 rounded-full bg-white shadow-md dark:bg-black/20 dark:text-white dark:shadow-none"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <DarkModeToggleSwap />
           <button
             onClick={() => setShowAccessibility(true)}
             className="text-black hover:text-[#ff6b35] transition-colors p-2 rounded-full bg-white shadow-md dark:bg-black/20 dark:text-white dark:shadow-none"
@@ -384,13 +372,7 @@ export function Navigation({
 
         {/* Mobile Menu Button */}
         <div className="flex items-center gap-3 lg:hidden">
-          <button
-            onClick={toggleTheme}
-            className="text-black hover:text-[#ff6b35] transition-colors p-2 rounded-full bg-white shadow-md dark:bg-black/20 dark:text-white dark:shadow-none"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <DarkModeToggleSwap />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="text-black hover:text-[#ff6b35] transition-colors p-2 dark:text-white"

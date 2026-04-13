@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { getServerUrl } from '../../utils/serverUrl';
 
 import { motion, AnimatePresence } from 'motion/react';

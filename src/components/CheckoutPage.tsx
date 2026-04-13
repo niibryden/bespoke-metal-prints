@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Package, MapPin, CheckCircle, ArrowLeft, Loader2, Gift, UserPlus, LogIn, MessageSquare } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getSupabaseClient } from '../utils/supabase/client';
-import logo from 'figma:asset/503d36cae9f0d312a29050db106ff5a907487708.png';
 import { OrderConfirmation } from './OrderConfirmation';
 import { StripePaymentForm } from './StripePaymentForm';
+import { TrustBadges } from './TrustBadges';
 import { getShippingDimensions } from '../utils/shipping-dimensions';
 import { createThumbnail } from '../utils/image-thumbnail';
 import { AuthModal } from './AuthModal';
@@ -128,11 +128,6 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
   // Load saved addresses from backend
   const loadSavedAddresses = async (userId: string, accessToken: string) => {
     try {
-      // Feature disabled - customer endpoint not yet implemented
-      // This will be enabled when we add saved address functionality
-      console.log('📍 Saved addresses feature not yet implemented');
-      return;
-      
       if (!accessToken) {
         console.error('❌ No access token provided to loadSavedAddresses');
         return;
@@ -141,22 +136,19 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
       const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-3e3a9cd7`;
       console.log('📡 Fetching customer data from:', `${serverUrl}/customer/${userId}`);
       
-      const response = await fetch(`${serverUrl}/customer/${userId}`, {
+      const response = await fetch(`${serverUrl}/customer/${userId}/address`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
       
-      console.log('📡 Customer data response status:', response.status);
+      console.log('📡 Customer addresses response status:', response.status);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Customer data loaded:', { 
-          addressCount: data.addresses?.length || 0,
-          paymentMethodCount: data.paymentMethods?.length || 0 
+        const addresses = await response.json();
+        console.log('✅ Customer addresses loaded:', { 
+          addressCount: addresses?.length || 0
         });
-        
-        const addresses = data.addresses || [];
         
         // Find default address or use the first one
         const defaultAddress = addresses.find((addr: any) => addr.isDefault) || addresses[0];
@@ -225,7 +217,30 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
       }
     };
     getUserSession();
-  }, [supabase]);
+    
+    // Listen for auth state changes (e.g., when user signs in/up via AuthModal)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('✅ User signed in, auto-proceeding to shipping');
+        setIsLoggedIn(true);
+        setShippingAddress(prev => ({
+          ...prev,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || prev.name,
+        }));
+        
+        // Auto-proceed to shipping when user signs in during checkout
+        if (step === 'auth') {
+          setStep('shipping');
+          setShowAuthModal(false);
+        }
+      }
+    });
+    
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, [supabase, step]);
   
   // Sync billing address with shipping address when useSameAddress is true
   useEffect(() => {
@@ -319,27 +334,30 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
     setDiscountError(null);
 
     try {
-      // Client-side validation for known discount codes
       const upperCode = discountCode.trim().toUpperCase();
       
-      if (upperCode === 'WELCOME10') {
+      // Call server to validate discount code
+      const response = await fetch(`${serverUrl}/checkout/validate-discount`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify({ code: upperCode }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
         setAppliedDiscount({ 
-          code: 'WELCOME10', 
-          type: 'percentage', 
-          value: 10,
+          code: upperCode, 
+          type: data.discount.type, 
+          value: data.discount.value,
           freeShipping: false 
         });
         setDiscountError(null);
-      } else if (upperCode === 'FREESHIP') {
-        setAppliedDiscount({ 
-          code: 'FREESHIP', 
-          type: 'fixed', 
-          value: 0,
-          freeShipping: true 
-        });
-        setDiscountError(null);
       } else {
-        setDiscountError('Invalid discount code');
+        setDiscountError(data.error || 'Invalid discount code');
         setAppliedDiscount(null);
       }
     } catch (error) {
@@ -562,71 +580,14 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
         console.log('📵 No phone number provided');
       }
       
-      // 🔧 CRITICAL FIX: Upload image BEFORE creating order to prevent race condition
-      // Previously: Image uploaded AFTER payment in onSuccess callback
-      // Problem: Stripe webhook marks order "paid" before frontend uploads image
-      // Solution: Upload image NOW so it's stored before payment completes
-      let imageUrl = null;
-      let earlyOrderId = null;
+      // ⚡ PERFORMANCE: Skip image upload for instant payment page load
+      // Image will be uploaded AFTER payment is confirmed in onSuccess callback
+      // This makes "Continue to Payment" instant (< 500ms instead of 5-30 seconds)
+      console.log('⚡ Skipping image upload - will upload after payment confirmation for better UX');
       
-      if (orderDetails.image) {
-        // Generate order ID now so we can use it for the image filename
-        earlyOrderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        
-        try {
-          console.log('📤 Uploading print-ready image to S3...');
-          
-          // Compress image before uploading  
-          const compressedImage = await compressImage(orderDetails.image, 0.7);
-          console.log('🗜️ Image compressed:', 
-            Math.round(orderDetails.image.length / 1024), 'KB →',
-            Math.round(compressedImage.length / 1024), 'KB'
-          );
-          
-          // Use order ID as filename for easy retrieval
-          const fileName = `order-images/${earlyOrderId}.png`;
-          
-          // Upload via server endpoint with timeout
-          const uploadResponse = await Promise.race([
-            fetch(`${serverUrl}/upload-image`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${publicAnonKey}`,
-              },
-              body: JSON.stringify({
-                imageData: compressedImage,
-                fileName: fileName,
-                orderId: earlyOrderId,
-              }),
-            }),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Upload timeout after 30s')), 30000)
-            )
-          ]) as Response;
-          
-          if (uploadResponse.ok) {
-            const uploadData = await uploadResponse.json();
-            imageUrl = uploadData.url;
-            setImageUploadedBeforePayment(true); // Track that upload succeeded
-            console.log('✅ Image uploaded to S3:', imageUrl);
-          } else {
-            const errorText = await uploadResponse.text();
-            console.error('❌ Pre-payment image upload failed (HTTP ' + uploadResponse.status + '):', errorText);
-            console.error('Response headers:', uploadResponse.headers);
-            console.warn('⚠️ Will retry image upload after payment confirmation');
-            setImageUploadedBeforePayment(false);
-            // Don't throw - allow checkout to continue
-          }
-        } catch (uploadErr) {
-          console.error('❌ Pre-payment image upload error:', uploadErr);
-          console.error('Error type:', uploadErr instanceof Error ? uploadErr.name : typeof uploadErr);
-          console.error('Error message:', uploadErr instanceof Error ? uploadErr.message : String(uploadErr));
-          console.warn('⚠️ Will retry image upload after payment confirmation');
-          setImageUploadedBeforePayment(false);
-          // Don't throw - allow checkout to continue with fallback
-        }
-      }
+      const imageUrl = null; // No pre-upload
+      const earlyOrderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      setImageUploadedBeforePayment(false); // Will upload after payment
       
       // Create order WITH image URL and specific order ID
       const orderResponse = await fetch(`${serverUrl}/create-order`, {
@@ -716,7 +677,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
             Back
           </button>
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Bespoke Metal Prints" className="h-8 sm:h-10 w-auto mix-blend-screen [data-theme='light']_&:mix-blend-darken" />
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Bespoke Metal Prints</h2>
           </div>
           <div className="w-20" /> {/* Spacer for centering */}
         </div>
@@ -837,13 +798,15 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                     placeholder="Email"
                     value={shippingAddress.email}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, email: e.target.value })}
+                    autoComplete="email"
                     className="col-span-2 px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <input
-                    type="text"
+                    type="tel"
                     placeholder="Phone Number (Optional)"
                     value={shippingAddress.phone}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, phone: e.target.value })}
+                    autoComplete="tel"
                     className="col-span-2 px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   
@@ -881,6 +844,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                     placeholder="Street Address"
                     value={shippingAddress.street1}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, street1: e.target.value })}
+                    autoComplete="shipping address-line1"
                     className="col-span-2 px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <input
@@ -888,6 +852,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                     placeholder="Apt, Suite (Optional)"
                     value={shippingAddress.street2}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, street2: e.target.value })}
+                    autoComplete="shipping address-line2"
                     className="col-span-2 px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <input
@@ -895,6 +860,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                     placeholder="City"
                     value={shippingAddress.city}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
+                    autoComplete="shipping address-level2"
                     className="px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <input
@@ -902,13 +868,16 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                     placeholder="State"
                     value={shippingAddress.state}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })}
+                    autoComplete="shipping address-level1"
                     className="px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <input
                     type="text"
+                    inputMode="numeric"
                     placeholder="ZIP Code"
                     value={shippingAddress.zip}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, zip: e.target.value })}
+                    autoComplete="shipping postal-code"
                     className="px-4 py-3 bg-[#0a0a0a] text-white rounded-lg border border-[#ff6b35]/20 focus:border-[#ff6b35] outline-none [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
                   />
                   <select
@@ -1103,6 +1072,11 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
 
               {/* Payment Methods section removed - cards are NOT saved for security */}
 
+              {/* Trust Badges */}
+              <div className="mb-8">
+                <TrustBadges variant="checkout" />
+              </div>
+
               {/* Stripe Payment Element */}
               {clientSecret ? (
                 <StripePaymentForm
@@ -1110,118 +1084,132 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                   onSuccess={async () => {
                     console.log('💳 Payment confirmed!');
                     
-                    // 🔄 FALLBACK: If pre-payment upload failed, try again now
-                    if (orderDetails.image && !imageUploadedBeforePayment) {
-                      console.log('⚠️ Retrying image upload (pre-payment upload failed)...');
+                    // Immediately show confirmation page - don't wait for background operations
+                    setStep('confirmation');
+                    if (onComplete) {
+                      onComplete();
+                    }
+                    
+                    // Handle background operations without blocking the UI
+                    (async () => {
                       try {
-                        const compressedImage = await compressImage(orderDetails.image, 0.7);
-                        const fileName = `order-images/${orderId}.png`;
+                        // 📤 Upload image now that payment is confirmed
+                        if (orderDetails.image && !imageUploadedBeforePayment) {
+                          console.log('📤 Uploading print-ready image to S3...');
+                          try {
+                            const compressedImage = await compressImage(orderDetails.image, 0.7);
+                            console.log('🗜️ Image compressed:', 
+                              Math.round(orderDetails.image.length / 1024), 'KB →',
+                              Math.round(compressedImage.length / 1024), 'KB'
+                            );
+                            const fileName = `order-images/${orderId}.png`;
+                            
+                            const uploadResponse = await fetch(`${serverUrl}/upload-image`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${publicAnonKey}`,
+                              },
+                              body: JSON.stringify({
+                                imageData: compressedImage,
+                                fileName: fileName,
+                                orderId: orderId,
+                              }),
+                            });
+                            
+                            if (uploadResponse.ok) {
+                              const uploadData = await uploadResponse.json();
+                              const uploadedImageUrl = uploadData.url;
+                              console.log('✅ Image uploaded successfully:', uploadedImageUrl);
+                              
+                              // Update order with image URL
+                              await fetch(`${serverUrl}/update-order`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${publicAnonKey}`,
+                                },
+                                body: JSON.stringify({
+                                  orderId: orderId,
+                                  imageUrl: uploadedImageUrl,
+                                }),
+                              });
+                              console.log('✅ Order updated with image URL');
+                            } else {
+                              console.error('❌ Post-payment image upload failed');
+                            }
+                          } catch (uploadErr) {
+                            console.error('❌ Post-payment image upload error:', uploadErr);
+                            // Payment succeeded, so don't block completion
+                          }
+                        } else {
+                          console.log('ℹ️ No image to upload or image already uploaded');
+                        }
                         
-                        const uploadResponse = await fetch(`${serverUrl}/upload-image`, {
+                        // Update order status to paid
+                        await fetch(`${serverUrl}/update-order-status`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${publicAnonKey}`,
                           },
                           body: JSON.stringify({
-                            imageData: compressedImage,
-                            fileName: fileName,
                             orderId: orderId,
+                            status: 'paid',
+                            paymentStatus: 'succeeded',
                           }),
                         });
-                        
-                        if (uploadResponse.ok) {
-                          const uploadData = await uploadResponse.json();
-                          const retryImageUrl = uploadData.url;
-                          console.log('✅ Fallback image upload successful:', retryImageUrl);
-                          
-                          // Update order with image URL
-                          await fetch(`${serverUrl}/update-order`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${publicAnonKey}`,
-                            },
-                            body: JSON.stringify({
-                              orderId: orderId,
-                              imageUrl: retryImageUrl,
-                            }),
-                          });
-                          console.log('✅ Order updated with fallback image URL');
-                        } else {
-                          console.error('❌ Fallback upload also failed');
-                        }
-                      } catch (retryErr) {
-                        console.error('❌ Fallback upload error:', retryErr);
-                        // Payment succeeded, so don't block completion
-                      }
-                    } else {
-                      console.log('✅ Image was uploaded before payment - no retry needed');
-                    }
-                    
-                    // Update order status to paid
-                    await fetch(`${serverUrl}/update-order-status`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${publicAnonKey}`,
-                      },
-                      body: JSON.stringify({
-                        orderId: orderId,
-                        status: 'paid',
-                        paymentStatus: 'succeeded',
-                      }),
-                    });
 
-                    // Save order to customer account if logged in
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
-                      try {
-                        // Create thumbnail for order history display only
-                        let thumbnailUrl = null;
-                        
-                        if (orderDetails.image) {
+                        // Save order to customer account if logged in
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session) {
                           try {
-                            console.log('Creating thumbnail for order history display...');
-                            thumbnailUrl = await createThumbnail(orderDetails.image, 200, 200, 0.6);
-                            console.log('Thumbnail created successfully');
-                          } catch (thumbError) {
-                            console.error('Failed to create thumbnail:', thumbError);
+                            // Create thumbnail for order history display only
+                            let thumbnailUrl = null;
+                            
+                            if (orderDetails.image) {
+                              try {
+                                console.log('Creating thumbnail for order history display...');
+                                thumbnailUrl = await createThumbnail(orderDetails.image, 200, 200, 0.6);
+                                console.log('Thumbnail created successfully');
+                              } catch (thumbError) {
+                                console.error('Failed to create thumbnail:', thumbError);
+                              }
+                            }
+                            
+                            await fetch(`${serverUrl}/customer/${session.user.id}/order`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session.access_token}`,
+                              },
+                              body: JSON.stringify({
+                                orderId: orderId,
+                                total,
+                                items: {
+                                  size: orderDetails.size,
+                                  finish: orderDetails.finish,
+                                  mountType: orderDetails.mountType,
+                                  frame: orderDetails.frame,
+                                  quantity: 1,
+                                },
+                                imageUrl: thumbnailUrl, // Small thumbnail for display in order history
+                                image: orderDetails.image, // Full original image for reordering and printing
+                              }),
+                            });
+                            
+                            // Save address
+                            await saveAddress(session.user.id, session.access_token);
+                          } catch (err) {
+                            console.error('Error saving customer data:', err);
                           }
                         }
                         
-                        await fetch(`${serverUrl}/customer/${session.user.id}/order`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`,
-                          },
-                          body: JSON.stringify({
-                            orderId: orderId,
-                            total,
-                            items: {
-                              size: orderDetails.size,
-                              finish: orderDetails.finish,
-                              mountType: orderDetails.mountType,
-                              frame: orderDetails.frame,
-                              quantity: 1,
-                            },
-                            imageUrl: thumbnailUrl, // Small thumbnail for display in order history
-                            image: orderDetails.image, // Full original image for reordering and printing
-                          }),
-                        });
-                        
-                        // Save address
-                        await saveAddress(session.user.id, session.access_token);
+                        console.log('✅ All background operations completed');
                       } catch (err) {
-                        console.error('Error saving customer data:', err);
+                        console.error('Error in background operations:', err);
                       }
-                    }
-
-                    setStep('confirmation');
-                    if (onComplete) {
-                      onComplete();
-                    }
+                    })(); // Execute immediately but don't await
                   }}
                   onError={(error) => {
                     setError(error);
@@ -1266,18 +1254,12 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
             <AuthModal
               onClose={() => {
                 setShowAuthModal(false);
-                // Check if user logged in and redirect to shipping
-                supabase.auth.getSession().then(({ data: { session } }) => {
-                  if (session?.user) {
-                    setIsLoggedIn(true);
-                    setShippingAddress(prev => ({
-                      ...prev,
-                      email: session.user.email || '',
-                      name: session.user.user_metadata?.name || prev.name,
-                    }));
-                    setStep('shipping');
-                  }
-                });
+              }}
+              onSuccess={() => {
+                // Called after successful login/signup
+                console.log('✅ Auth successful, proceeding to shipping');
+                setStep('shipping');
+                setShowAuthModal(false);
               }}
             />
           )}

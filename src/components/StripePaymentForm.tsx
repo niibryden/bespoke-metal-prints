@@ -7,7 +7,7 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 import { Loader2, CreditCard } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import '../styles/stripe.css';
 import { motion } from 'motion/react';
 

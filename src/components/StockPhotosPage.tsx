@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, ImageIcon, Sparkles, ChevronRight, Search, Grid3x3, Grid2x2, Printer, Loader2, CheckCircle } from 'lucide-react';
+import { X, ImageIcon, ChevronRight, Search, Grid3x3, Grid2x2, Printer, Loader2, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
 import { ReturnToHomeButton } from './ReturnToHomeButton';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -76,8 +76,8 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
       console.log('📷 Collections loaded:', data.length);
       
       // Transform collections to include photo count and thumbnail
-      const transformedCollections = data.map((col: any) => ({
-        id: col.id.toString(),
+      const transformedCollections = data.map((col: any, index: number) => ({
+        id: (col.id || `col_${index}`).toString(),
         name: col.title,
         description: col.description || '',
         photos: col.photos || [],
@@ -287,13 +287,9 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-6 h-6 text-[#ff6b35]" />
-            <h1 className="text-3xl sm:text-4xl md:text-5xl text-gray-900 dark:text-white">
-              Premium Stock Photos
-            </h1>
-            <Sparkles className="w-6 h-6 text-[#ff6b35]" />
-          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl text-gray-900 dark:text-white mb-4">
+            Premium Stock Photos
+          </h1>
           
           <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
             Explore our curated collection of professional photography and digital art.
@@ -340,26 +336,73 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
 
         {filteredCollections.length === 0 ? (
           <motion.div 
-            className="text-center py-16"
+            className="max-w-2xl mx-auto text-center py-16"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-[#1a1a1a] flex items-center justify-center mx-auto mb-4">
-              <Search className="w-10 h-10 text-gray-600" />
-            </div>
-            <h3 className="text-xl text-gray-900 dark:text-white mb-2">
-              {searchQuery ? 'No collections found' : 'No collections available yet'}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {searchQuery ? 'Try searching with different keywords' : 'Check back soon for new collections!'}
-            </p>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="mt-4 px-6 py-2 bg-[#ff6b35] text-black rounded-lg hover:bg-[#ff8555] transition-colors"
-              >
-                Clear Search
-              </button>
+            {searchQuery ? (
+              // Search results empty
+              <>
+                <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-[#1a1a1a] flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-10 h-10 text-gray-600" />
+                </div>
+                <h3 className="text-xl text-gray-900 dark:text-white mb-2">
+                  No collections found
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Try searching with different keywords
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="mt-4 px-6 py-2 bg-[#ff6b35] text-black rounded-lg hover:bg-[#ff8555] transition-colors"
+                >
+                  Clear Search
+                </button>
+              </>
+            ) : (
+              // No collections at all
+              <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#ff8c42]/10 dark:from-[#ff6b35]/5 dark:to-[#ff8c42]/5 rounded-2xl p-12 border-2 border-[#ff6b35]/20">
+                <div className="w-24 h-24 rounded-full bg-[#ff6b35]/20 flex items-center justify-center mx-auto mb-6">
+                  <ImageIcon className="w-12 h-12 text-[#ff6b35]" />
+                </div>
+                <h3 className="text-3xl text-gray-900 dark:text-white mb-4">
+                  📸 Stock Photo Library Coming Soon!
+                </h3>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+                  We're curating a premium collection of high-quality images perfect for metal prints.<br />
+                  Check back soon!
+                </p>
+                
+                <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-6 mb-8 border border-gray-200 dark:border-[#ff6b35]/20">
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    <strong>In the meantime, you can:</strong>
+                  </p>
+                  <div className="space-y-3">
+                    <button
+                      onClick={onClose}
+                      className="w-full py-3 px-6 bg-[#ff6b35] text-white rounded-lg hover:bg-[#ff8555] transition-all flex items-center justify-center gap-2 font-medium"
+                    >
+                      <Printer className="w-5 h-5" />
+                      Upload Your Own Photo
+                    </button>
+                    <a
+                      href="https://www.instagram.com/bespokemetalprints"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 px-6 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white border-2 border-gray-300 dark:border-[#ff6b35]/30 rounded-lg hover:border-[#ff6b35] dark:hover:border-[#ff6b35] transition-all flex items-center justify-center gap-2 font-medium"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                      Browse Our Instagram Gallery
+                    </a>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  💡 <strong>Tip:</strong> Upload your own high-resolution photos for the best print quality!
+                </p>
+              </div>
             )}
           </motion.div>
         ) : (

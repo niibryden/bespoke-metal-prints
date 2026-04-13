@@ -1,7 +1,8 @@
 {
-  "name": "bespoke-metal-prints",
+  "name": "Bespoke Metal Prints",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@aws-sdk/client-s3": "^3",
     "@aws-sdk/s3-request-presigner": "^3",
@@ -34,12 +35,12 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@stripe/react-stripe-js": "*",
     "@stripe/stripe-js": "*",
-    "@supabase/supabase-js": "*",
+    "@supabase/supabase-js": "^2",
     "class-variance-authority": "^0.7.1",
     "clsx": "*",
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
-    "hono": "*",
+    "hono": "^4",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.487.0",
     "motion": "*",
@@ -53,12 +54,15 @@
     "sonner": "^2.0.3",
     "stripe": "^17.4.0",
     "tailwind-merge": "*",
+    "tw-animate-css": "^1.3.8",
     "twilio": "^5.3.4",
     "vaul": "^1.1.2"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.1.12",
     "@types/node": "^20.10.0",
-    "@vitejs/plugin-react-swc": "^3.10.2",
+    "@vitejs/plugin-react": "^4.7.0",
+    "tailwindcss": "4.1.12",
     "vite": "6.3.5"
   },
   "scripts": {

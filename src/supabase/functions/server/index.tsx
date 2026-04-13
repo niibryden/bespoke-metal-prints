@@ -98,27 +98,41 @@ app.get("/make-server-3e3a9cd7/collections", async (c) => {
     const collections = await kv.get('stock:collections') || [];
     
     // Transform collections to public format with only web-optimized images
-    const publicCollections = collections.map((col: any) => {
+    const publicCollections = await Promise.all(collections.map(async (col: any, index: number) => {
       // Filter to only include web-optimized images (faster loading)
       const webImages = (col.images || []).filter((img: any) => 
         img.url.includes('-web.') || !img.url.includes('-original.')
       );
       
-      // Return direct S3 URLs (web images should be public)
-      const photosWithUrls = webImages.map((img: any) => ({
-        id: img.id,
-        url: img.url, // Direct S3 URL
-        name: img.name
+      // Generate signed URLs for marketplace photos or images in private paths
+      const photosWithUrls = await Promise.all(webImages.map(async (img: any) => {
+        let imageUrl = img.url;
+        
+        // If it's a marketplace photo or in a private path (contains '/original/'), use signed URL
+        if (img.isMarketplacePhoto || img.url.includes('/original/') || img.url.includes('marketplace')) {
+          try {
+            imageUrl = await generateSignedUrl(img.url);
+          } catch (err) {
+            console.warn('Failed to generate signed URL for:', img.url.substring(0, 50), err);
+            // Keep original URL as fallback
+          }
+        }
+        
+        return {
+          id: img.id,
+          url: imageUrl,
+          name: img.name || img.title
+        };
       }));
       
       return {
-        id: col.id,
+        id: col.id || `col_${index}`, // Generate ID if missing
         title: col.name,
         description: col.description || '',
         photos: photosWithUrls,
         hidden: col.hidden || false
       };
-    });
+    }));
     
     return c.json(publicCollections);
   } catch (error: any) {
@@ -436,6 +450,12 @@ app.get("/make-server-3e3a9cd7/tracking/:trackingNumber/live", async (c) => {
   return await customerRoutes.fetch(c.req.raw, {});
 });
 
+// Track orders by email (public endpoint - for guest checkout)
+app.post("/make-server-3e3a9cd7/tracking/by-email", async (c) => {
+  const { default: customerRoutes } = await import("./customer.ts");
+  return await customerRoutes.fetch(c.req.raw, {});
+});
+
 // Customer address management routes
 app.all("/make-server-3e3a9cd7/customer/*", async (c) => {
   const { default: customerRoutes } = await import("./customer.ts");
@@ -446,6 +466,74 @@ app.all("/make-server-3e3a9cd7/customer/*", async (c) => {
 app.all("/make-server-3e3a9cd7/webhooks/*", async (c) => {
   const { default: webhookRoutes } = await import("./webhooks.ts");
   return await webhookRoutes.fetch(c.req.raw, {});
+});
+
+// Lazy-load marketplace routes
+app.all("/make-server-3e3a9cd7/marketplace/*", async (c) => {
+  const { default: marketplaceRoutes } = await import("./marketplace.ts");
+  // Forward the request to the marketplace router
+  // Strip the /make-server-3e3a9cd7/marketplace prefix so the nested router works correctly
+  return await marketplaceRoutes.fetch(c.req.raw, {});
+});
+
+// Legacy Photographer Dashboard endpoint - DEPRECATED, use /marketplace/photographer/dashboard instead
+app.post("/make-server-3e3a9cd7/photographer-dashboard", async (c) => {
+  console.log('⚠️ WARNING: Legacy photographer-dashboard endpoint called. Please update client to use /marketplace/photographer/dashboard');
+  return c.json({ 
+    error: 'This endpoint is deprecated. Please use /marketplace/photographer/dashboard with GET and Authorization header.' 
+  }, 410); // 410 Gone status
+});
+
+// Track a marketplace photo sale (called when order is completed)
+app.post("/make-server-3e3a9cd7/track-marketplace-sale", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { photoId, orderId, printSize, quantity, basePrice, customerName } = body;
+
+    if (!photoId || !orderId) {
+      return c.json({ error: 'photoId and orderId required' }, 400);
+    }
+
+    // Get the photo details
+    const photo = await kv.get(`marketplace:photo:${photoId}`);
+    if (!photo) {
+      return c.json({ error: 'Photo not found' }, 404);
+    }
+
+    // Calculate royalty (25%)
+    const royaltyPercentage = 25;
+    const royaltyAmount = (basePrice * royaltyPercentage) / 100;
+
+    // Create sale record
+    const saleId = `sale_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const sale = {
+      id: saleId,
+      photoId,
+      photographerEmail: photo.photographerEmail,
+      photographerName: photo.photographerName,
+      orderId,
+      saleDate: new Date().toISOString(),
+      printSize,
+      quantity,
+      basePrice,
+      royaltyPercentage,
+      royaltyAmount,
+      customerName: customerName || 'Anonymous',
+    };
+
+    await kv.set(`marketplace:sale:${saleId}`, sale);
+
+    console.log(`✅ Marketplace sale tracked: ${royaltyAmount.toFixed(2)} royalty for photographer ${photo.photographerEmail}`);
+
+    return c.json({ 
+      success: true, 
+      saleId,
+      royaltyAmount,
+    });
+  } catch (error: any) {
+    console.error('Error tracking marketplace sale:', error);
+    return c.json({ error: error.message }, 500);
+  }
 });
 
 Deno.serve(app.fetch);

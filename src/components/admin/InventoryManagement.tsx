@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Package, AlertTriangle, Save, Plus, Edit2, Trash2, Check } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { getServerUrl } from '../../utils/serverUrl';
 
 interface InventoryItem {

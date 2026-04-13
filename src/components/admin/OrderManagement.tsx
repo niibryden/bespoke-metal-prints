@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Package, Search, Eye, Truck, CheckCircle, Clock, XCircle, ExternalLink, Printer, Ban, DollarSign, Loader2, Download, Trash2 } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { getServerUrl } from '../../utils/serverUrl';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { SyncOrderFromStripe } from './SyncOrderFromStripe';
@@ -1301,55 +1301,83 @@ export function OrderManagement({ adminInfo }: { adminInfo?: { email: string; ro
               )}
 
               {/* Debug: Show if no image found */}
-              {!selectedOrder.orderDetails?.image && !selectedOrder.orderDetails?.imageUrl && !selectedOrder.orderDetails?.imageStoredSeparately && !selectedOrder.imageUrl && (
-                <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <p className="text-sm font-medium text-yellow-500 mb-2">
-                    ⚠️ No Print-Ready Image Found
-                  </p>
-                  
-                  {/* Show different message for pending vs paid orders */}
-                  {selectedOrder.status === 'pending' ? (
-                    <div>
-                      <p className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 mb-3">
-                        This is a <strong>pending order</strong> where the customer did not complete payment. Print-ready images are only uploaded after successful payment.
-                      </p>
-                      <p className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 mb-3">
-                        <strong>What this means:</strong>
-                      </p>
-                      <ul className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 list-disc list-inside space-y-1">
-                        <li>Payment was never completed (abandoned cart or test order)</li>
-                        <li>No image was uploaded (saves S3 storage)</li>
-                        <li>You can safely delete this order using the button below</li>
-                      </ul>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 mb-3">
-                        This <strong>paid order</strong> does not have a print-ready image stored. This might happen if:
-                      </p>
-                      <ul className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 list-disc list-inside space-y-1">
-                        <li>The order was created before image storage was implemented</li>
-                        <li>The image upload failed after payment (network error)</li>
-                        <li>The image data was too large and was truncated</li>
-                      </ul>
-                      <button
-                        onClick={() => {
-                          console.log('📊 Order Debug Information:');
-                          console.log('Order ID:', selectedOrder.id);
-                          console.log('Full Order Data:', selectedOrder);
-                          console.log('Order Details:', selectedOrder.orderDetails);
-                          console.log('Has image field:', 'image' in (selectedOrder.orderDetails || {}));
-                          console.log('Has imageUrl field:', 'imageUrl' in (selectedOrder.orderDetails || {}));
-                          alert('Debug info logged to console. Press F12 to view.');
-                        }}
-                        className="mt-3 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 rounded text-xs text-yellow-300 transition-all"
-                      >
-                        🐛 Log Debug Info to Console
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+              {!selectedOrder.orderDetails?.image && !selectedOrder.orderDetails?.imageUrl && !selectedOrder.orderDetails?.imageStoredSeparately && !selectedOrder.imageUrl && (() => {
+                // Check if this is a recent order (within last 2 minutes) that might still be uploading
+                const orderAge = selectedOrder.createdAt ? 
+                  (new Date().getTime() - new Date(selectedOrder.createdAt).getTime()) / 1000 : Infinity;
+                const isRecentOrder = orderAge < 120; // 2 minutes
+                const isRecentPaidOrder = isRecentOrder && selectedOrder.status === 'paid';
+                
+                return (
+                  <div className={`p-4 ${isRecentPaidOrder ? 'bg-blue-500/10 border-blue-500/30' : 'bg-yellow-500/10 border-yellow-500/30'} border rounded-lg`}>
+                    <p className={`text-sm font-medium ${isRecentPaidOrder ? 'text-blue-500' : 'text-yellow-500'} mb-2`}>
+                      {isRecentPaidOrder ? '⏳ Image Upload in Progress' : '⚠️ No Print-Ready Image Found'}
+                    </p>
+                    
+                    {isRecentPaidOrder ? (
+                      <div>
+                        <p className="text-xs text-blue-400 [data-theme='light']_&:text-blue-600 mb-3">
+                          This order was just placed <strong>{Math.round(orderAge)} seconds ago</strong>. The print-ready image is being compressed and uploaded to S3 in the background.
+                        </p>
+                        <p className="text-xs text-blue-400 [data-theme='light']_&:text-blue-600 mb-3">
+                          <strong>What's happening:</strong>
+                        </p>
+                        <ul className="text-xs text-blue-400 [data-theme='light']_&:text-blue-600 list-disc list-inside space-y-1 mb-3">
+                          <li>Payment was successful (customer saw confirmation immediately)</li>
+                          <li>High-resolution image is being compressed for optimal storage</li>
+                          <li>Upload to S3 typically completes within 30-60 seconds</li>
+                          <li>The image will appear here automatically when ready</li>
+                        </ul>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded text-xs text-blue-300 transition-all"
+                        >
+                          🔄 Refresh to Check Status
+                        </button>
+                      </div>
+                    ) : selectedOrder.status === 'pending' ? (
+                      <div>
+                        <p className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 mb-3">
+                          This is a <strong>pending order</strong> where the customer did not complete payment. Print-ready images are only uploaded after successful payment.
+                        </p>
+                        <p className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 mb-3">
+                          <strong>What this means:</strong>
+                        </p>
+                        <ul className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 list-disc list-inside space-y-1">
+                          <li>Payment was never completed (abandoned cart or test order)</li>
+                          <li>No image was uploaded (saves S3 storage)</li>
+                          <li>You can safely delete this order using the button below</li>
+                        </ul>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 mb-3">
+                          This <strong>paid order</strong> does not have a print-ready image stored. This might happen if:
+                        </p>
+                        <ul className="text-xs text-yellow-400 [data-theme='light']_&:text-yellow-600 list-disc list-inside space-y-1">
+                          <li>The order was created before image storage was implemented</li>
+                          <li>The image upload failed after payment (network error)</li>
+                          <li>The image data was too large and was truncated</li>
+                        </ul>
+                        <button
+                          onClick={() => {
+                            console.log('📊 Order Debug Information:');
+                            console.log('Order ID:', selectedOrder.id);
+                            console.log('Full Order Data:', selectedOrder);
+                            console.log('Order Details:', selectedOrder.orderDetails);
+                            console.log('Has image field:', 'image' in (selectedOrder.orderDetails || {}));
+                            console.log('Has imageUrl field:', 'imageUrl' in (selectedOrder.orderDetails || {}));
+                            alert('Debug info logged to console. Press F12 to view.');
+                          }}
+                          className="mt-3 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 rounded text-xs text-yellow-300 transition-all"
+                        >
+                          🐛 Log Debug Info to Console
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Product details */}
               {selectedOrder.orderDetails && (

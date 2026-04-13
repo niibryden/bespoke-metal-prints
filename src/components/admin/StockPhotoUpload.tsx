@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { Upload, Folder, Edit2, Trash2, X, CheckCircle, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { getServerUrl } from '../../utils/serverUrl';
 import { getSupabaseClient } from '../../utils/supabase/client';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
@@ -429,7 +429,7 @@ export function StockPhotoUpload({ adminInfo }: { adminInfo?: { email: string; r
                 <div className="flex gap-4">
                   {/* Preview */}
                   <div className="w-24 h-24 rounded-lg overflow-hidden border border-[#2a2a2a] [data-theme='light']_&:border-gray-300 flex-shrink-0">
-                    <ImageWithFallback
+                    <img
                       src={photo.preview}
                       alt={photo.title}
                       className="w-full h-full object-cover"

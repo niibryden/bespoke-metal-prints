@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Package, MapPin, CreditCard, Trash2, Plus, Loader2, Edit2, RotateCcw, LogOut } from 'lucide-react';
 import { getSupabaseClient } from '../utils/supabase/client';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ReturnToHomeButton } from './ReturnToHomeButton';
 
@@ -126,15 +126,32 @@ export function AccountPage({ onClose, onSignOut, onReorder }: AccountPageProps)
         const ordersData = await ordersResponse.json();
         
         // Transform orders to match the expected format
-        const transformedOrders = ordersData.map((order: any) => ({
-          orderId: order.id,
-          date: order.createdAt,
-          total: order.amount || 0,
-          status: order.status,
-          items: order.orderDetails || {},
-          imageUrl: order.orderDetails?.imageUrl,
-          image: order.orderDetails?.image,
-        }));
+        const transformedOrders = ordersData.map((order: any) => {
+          // For cart orders with multiple items, use the first item's image
+          let primaryImage = null;
+          let orderItems = null;
+          
+          if (order.orderDetails?.items && Array.isArray(order.orderDetails.items)) {
+            // Multi-item cart order
+            orderItems = order.orderDetails.items;
+            const firstItemWithImage = orderItems.find((item: any) => item.image || item.imageUrl);
+            primaryImage = firstItemWithImage?.image || firstItemWithImage?.imageUrl;
+          } else if (order.orderDetails) {
+            // Single-item order (old format)
+            primaryImage = order.orderDetails.imageUrl || order.orderDetails.image;
+            orderItems = order.orderDetails;
+          }
+          
+          return {
+            orderId: order.id,
+            date: order.createdAt,
+            total: order.amount || 0,
+            status: order.status,
+            items: orderItems || {},
+            imageUrl: primaryImage || order.imageUrl,
+            image: primaryImage || order.image,
+          };
+        });
         
         // Sort by date descending (most recent first)
         transformedOrders.sort((a: any, b: any) => 
@@ -232,6 +249,32 @@ export function AccountPage({ onClose, onSignOut, onReorder }: AccountPageProps)
       }
     } catch (err) {
       console.error('Error saving address:', err);
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId: string) => {
+    if (!user) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-3e3a9cd7/customer/${user.id}/address/${addressId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ isDefault: true }),
+        }
+      );
+
+      if (response.ok) {
+        // Reload addresses to get updated default status
+        await loadUserData();
+      }
+    } catch (err) {
+      console.error('Error setting default address:', err);
     }
   };
 
@@ -451,23 +494,33 @@ export function AccountPage({ onClose, onSignOut, onReorder }: AccountPageProps)
                               </p>
                               <p className="text-gray-400 text-sm [data-theme='light']_&:text-gray-600">{address.country}</p>
                             </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditingAddress(address);
-                                  setShowAddAddress(true);
-                                }}
-                                className="flex-1 px-4 py-2 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-all flex items-center justify-center gap-2 [data-theme='light']_&:bg-gray-200 [data-theme='light']_&:text-black [data-theme='light']_&:hover:bg-gray-300"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteAddress(address.id)}
-                                className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all flex items-center justify-center gap-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingAddress(address);
+                                    setShowAddAddress(true);
+                                  }}
+                                  className="flex-1 px-4 py-2 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-all flex items-center justify-center gap-2 [data-theme='light']_&:bg-gray-200 [data-theme='light']_&:text-black [data-theme='light']_&:hover:bg-gray-300"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteAddress(address.id)}
+                                  className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all flex items-center justify-center gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                              {!address.isDefault && (
+                                <button
+                                  onClick={() => handleSetDefaultAddress(address.id)}
+                                  className="w-full px-4 py-2 bg-[#ff6b35]/20 text-[#ff6b35] rounded-lg hover:bg-[#ff6b35]/30 transition-all text-sm"
+                                >
+                                  Set as Default
+                                </button>
+                              )}
                             </div>
                           </motion.div>
                         ))}

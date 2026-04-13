@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Home, ChevronRight, Search, Grid3x3, Grid2x2, Image as ImageIcon, Sparkles, Zap, Clock, CheckCircle, Printer, Loader2 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { projectId, publicAnonKey } from '../utils/supabase/config';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
 // Removed getProxiedImageUrl - using direct S3 URLs now
 

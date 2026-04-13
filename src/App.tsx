@@ -1,23 +1,40 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { lazy, Suspense, useEffect, useState, startTransition } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { HeroSection } from './components/HeroSection';
-import { ConfiguratorSection } from './components/ConfiguratorSection';
-import { FeaturesSection } from './components/FeaturesSection';
-import { Footer } from './components/Footer';
-import { ScrollToTop } from './components/ScrollToTop';
-import { Navigation } from './components/Navigation';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { CartProvider } from './contexts/CartContext';
+import { DarkModeAudit } from './components/DarkModeAudit';
 import { SEO, SEOConfig } from './components/SEO';
 import { StockPhotosPreview } from './components/StockPhotosPreview';
 import { FloatingCartButton } from './components/FloatingCartButton';
 import { CartModal } from './components/CartModal';
 import { SignupPopup } from './components/SignupPopup';
-import { ShowAnonKey } from './components/ShowAnonKey';
+import { Navigation } from './components/Navigation';
+import { HeroSection } from './components/HeroSection';
+import { ReviewsCarousel } from './components/ReviewsCarousel';
+import { FeaturesSection } from './components/FeaturesSection';
+import { ConfiguratorSection } from './components/ConfiguratorSection';
+import { Footer } from './components/Footer';
+import { ScrollToTop } from './components/ScrollToTop';
 import { applyAccessibilitySettings } from './utils/apply-accessibility';
 import { initPerformanceMonitoring } from './utils/performance';
 import './utils/optimization-tools';
+import { Toaster } from 'sonner@2.0.3';
+
+// Suppress harmless Supabase auth lock warnings in development
+// This warning occurs due to React Strict Mode causing double renders
+// The lock is automatically recovered and doesn't affect functionality
+if (typeof console !== 'undefined') {
+  const originalWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    const message = args[0]?.toString() || '';
+    if (message.includes('Lock "lock:sb-') && message.includes('was not released within')) {
+      // Silently ignore Supabase lock timeout warnings - they auto-recover
+      return;
+    }
+    originalWarn.apply(console, args);
+  };
+}
 
 // Lazy load heavy components and animations
 const StockPhotosPage = lazy(() => import('./components/StockPhotosPage').then(m => ({ default: m.StockPhotosPage })));
@@ -35,6 +52,7 @@ const CartCheckoutPage = lazy(() => import('./components/CartCheckoutPage').then
 const ProductsPage = lazy(() => import('./components/ProductsPage').then(m => ({ default: m.ProductsPage })));
 const FAQPage = lazy(() => import('./components/FAQPage').then(m => ({ default: m.FAQPage })));
 const AboutPage = lazy(() => import('./components/AboutPage').then(m => ({ default: m.AboutPage })));
+const CompleteGuidePage = lazy(() => import('./components/CompleteGuidePage').then(m => ({ default: m.CompleteGuidePage })));
 const SizeGuidePage = lazy(() => import('./components/SizeGuidePage').then(m => ({ default: m.SizeGuidePage })));
 const HDMetalPrintGuidePage = lazy(() => import('./components/HDMetalPrintGuidePage').then(m => ({ default: m.HDMetalPrintGuidePage })));
 const CareInstructionsPage = lazy(() => import('./components/CareInstructionsPage').then(m => ({ default: m.CareInstructionsPage })));
@@ -49,6 +67,11 @@ const BestWallArtOfficesPage = lazy(() => import('./components/BestWallArtOffice
 const BestWallArtBathroomsPage = lazy(() => import('./components/BestWallArtBathroomsPage').then(m => ({ default: m.BestWallArtBathroomsPage })));
 const DiagnosticPage = lazy(() => import('./components/DiagnosticPage').then(m => ({ default: m.DiagnosticPage })));
 const SupportSyncIntegrationPage = lazy(() => import('./components/SupportSyncIntegrationPage').then(m => ({ default: m.SupportSyncIntegrationPage })));
+const PhotographerSignupPage = lazy(() => import('./components/PhotographerSignupPage').then(m => ({ default: m.PhotographerSignupPage })));
+const PhotographerDashboard = lazy(() => import('./components/PhotographerDashboard').then(m => ({ default: m.PhotographerDashboard })));
+const PhotographerLoginPage = lazy(() => import('./components/PhotographerLoginPage').then(m => ({ default: m.PhotographerLoginPage })));
+const PhotographerMarketplaceHub = lazy(() => import('./components/PhotographerMarketplaceHub'));
+const PhotoUploadModal = lazy(() => import('./components/PhotoUploadModal').then(m => ({ default: m.PhotoUploadModal })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -57,7 +80,7 @@ const PageLoader = () => (
   </div>
 );
 
-type PageView = 'home' | 'stock-photos' | 'collection' | 'collection-detail' | 'admin-login' | 'admin-bootstrap' | 'admin-dashboard' | 'tracking' | 'refund-policy' | 'shipping-policy' | 'privacy-policy' | 'terms-conditions' | 'cart-checkout' | 'products' | 'faq' | 'about' | 'size-guide' | 'hd-metal-print-guide' | 'care-instructions' | 'reviews' | 'metal-prints-explained' | 'metal-prints-vs-canvas' | 'metal-prints-vs-acrylic' | 'metal-prints-vs-paper' | 'best-print-type-wall-art' | 'best-photo-print-material-gifts' | 'best-wall-art-offices' | 'best-wall-art-bathrooms' | 'diagnostic' | 'support-sync-integration';
+type PageView = 'home' | 'stock-photos' | 'collection' | 'collection-detail' | 'admin-login' | 'admin-bootstrap' | 'admin-dashboard' | 'tracking' | 'refund-policy' | 'shipping-policy' | 'privacy-policy' | 'terms-conditions' | 'cart-checkout' | 'products' | 'faq' | 'about' | 'size-guide' | 'hd-metal-print-guide' | 'care-instructions' | 'reviews' | 'metal-prints-explained' | 'metal-prints-vs-canvas' | 'metal-prints-vs-acrylic' | 'metal-prints-vs-paper' | 'best-print-type-wall-art' | 'best-photo-print-material-gifts' | 'best-wall-art-offices' | 'best-wall-art-bathrooms' | 'diagnostic' | 'support-sync-integration' | 'photographer-signup' | 'photographer-login' | 'photographer-dashboard' | 'photographer-marketplace';
 
 export default function App() {
   // Clean up any oversized cart data on app startup
@@ -167,6 +190,8 @@ export default function App() {
   const [reorderConfig, setReorderConfig] = useState<any>(null);
   const [initialOrderId, setInitialOrderId] = useState<string | null>(null);
   const [showCart, setShowCart] = useState(false);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [photographerEmail, setPhotographerEmail] = useState<string | null>(null);
   
   // If admin session exists, show admin dashboard
   useEffect(() => {
@@ -244,7 +269,7 @@ export default function App() {
   // Service worker registration - DISABLED in iframe/Figma environment
   // Service workers don't work properly in iframes and cause MIME type errors
   useEffect(() => {
-    // Only register SW in production on real domains (not Figma iframe)
+    // Only register SW in production on real domains (not Figma)
     const isProduction = window.location.hostname !== 'localhost' 
       && !window.location.hostname.includes('figma');
     
@@ -528,7 +553,7 @@ export default function App() {
                 ) : currentPage === 'faq' ? (
                   <FAQPage key="faq-page" onClose={handleGoHome} />
                 ) : currentPage === 'about' ? (
-                  <AboutPage key="about-page" onClose={handleGoHome} />
+                  <CompleteGuidePage key="complete-guide-page" onClose={handleGoHome} />
                 ) : currentPage === 'size-guide' ? (
                   <SizeGuidePage key="size-guide-page" onClose={handleGoHome} />
                 ) : currentPage === 'hd-metal-print-guide' ? (
@@ -557,6 +582,48 @@ export default function App() {
                   <DiagnosticPage key="diagnostic-page" onClose={handleGoHome} />
                 ) : currentPage === 'support-sync-integration' ? (
                   <SupportSyncIntegrationPage key="support-sync-integration-page" onClose={handleGoHome} />
+                ) : currentPage === 'photographer-marketplace' ? (
+                  <PhotographerMarketplaceHub 
+                    key="photographer-marketplace" 
+                    onClose={handleGoHome}
+                    onSignupClick={() => setCurrentPage('photographer-signup')}
+                    onLoginClick={() => setCurrentPage('photographer-login')}
+                  />
+                ) : currentPage === 'photographer-signup' ? (
+                  <PhotographerSignupPage 
+                    key="photographer-signup" 
+                    onClose={handleGoHome}
+                    onSuccess={(email: string) => {
+                      setPhotographerEmail(email);
+                      setCurrentPage('photographer-dashboard');
+                    }}
+                  />
+                ) : currentPage === 'photographer-login' ? (
+                  <PhotographerLoginPage 
+                    key="photographer-login" 
+                    onClose={handleGoHome}
+                    onSuccess={(email: string) => {
+                      setPhotographerEmail(email);
+                      setCurrentPage('photographer-dashboard');
+                    }}
+                    onSignupClick={() => setCurrentPage('photographer-signup')}
+                  />
+                ) : currentPage === 'photographer-dashboard' ? (
+                  <PhotographerDashboard 
+                    key="photographer-dashboard" 
+                    photographerEmail={photographerEmail || ''}
+                    onLogout={() => {
+                      setPhotographerEmail(null);
+                      startTransition(() => {
+                        setCurrentPage('home');
+                      });
+                    }}
+                    onUploadClick={() => {
+                      startTransition(() => {
+                        setShowPhotoUpload(true);
+                      });
+                    }}
+                  />
                 ) : (
                   <>
                     <Navigation 
@@ -577,6 +644,7 @@ export default function App() {
                       onReviewsClick={() => setCurrentPage('reviews')}
                     />
                     <HeroSection />
+                    <ReviewsCarousel />
                     <FeaturesSection />
                     <StockPhotosPreview onViewAll={() => setCurrentPage('stock-photos')} />
                     <ConfiguratorSection 
@@ -587,6 +655,7 @@ export default function App() {
                     />
                     <Footer 
                       onAdminClick={handleGoToAdminLogin}
+                      onMarketplaceClick={() => setCurrentPage('photographer-marketplace')}
                     />
                   </>
                 )}
@@ -605,7 +674,26 @@ export default function App() {
                 />
               )}
             </AnimatePresence>
+            
+            {/* Photographer Photo Upload Modal */}
+            <AnimatePresence>
+              {showPhotoUpload && (
+                <Suspense fallback={null}>
+                  <PhotoUploadModal
+                    onClose={() => setShowPhotoUpload(false)}
+                    onSuccess={() => {
+                      setShowPhotoUpload(false);
+                      // Reload dashboard to show the new photo
+                      window.location.reload();
+                    }}
+                  />
+                </Suspense>
+              )}
+            </AnimatePresence>
+
             <SignupPopup />
+            <DarkModeAudit />
+            <Toaster />
           </div>
         </CartProvider>
       </AccessibilityProvider>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Key, UserPlus, Users, Shield, Trash2, Eye, EyeOff, Database } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/config';
+import { Key, UserPlus, Users, Shield, Trash2, Eye, EyeOff, Database, Tag, Plus, Edit2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { getServerUrl } from '../../utils/server-config';
 
 interface AdminUser {
@@ -9,6 +9,14 @@ interface AdminUser {
   email: string;
   name: string;
   role: 'super_admin' | 'printer' | 'finance' | 'inventory';
+  createdAt: string;
+}
+
+interface DiscountCode {
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  active: boolean;
   createdAt: string;
 }
 
@@ -48,6 +56,16 @@ export function AdminSettings({ adminInfo }: AdminSettingsProps) {
 
   const [ordersModified, setOrdersModified] = useState(0);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  // Discount codes state
+  const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
+  const [loadingDiscounts, setLoadingDiscounts] = useState(true);
+  const [newDiscountCode, setNewDiscountCode] = useState('');
+  const [newDiscountType, setNewDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [newDiscountValue, setNewDiscountValue] = useState('');
+  const [discountMessage, setDiscountMessage] = useState('');
+  const [discountError, setDiscountError] = useState('');
+  const [isCreatingDiscount, setIsCreatingDiscount] = useState(false);
 
   const serverUrl = getServerUrl();
 

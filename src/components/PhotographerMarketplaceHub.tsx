@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Camera, TrendingUp, DollarSign, Users, LogIn, UserPlus } from 'lucide-react';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface PhotographerMarketplaceHubProps {
   onClose: () => void;

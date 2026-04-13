@@ -4,6 +4,7 @@ import { X, Home, ChevronRight, Search, Grid3x3, Grid2x2, Image as ImageIcon, Sp
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 // Removed getProxiedImageUrl - using direct S3 URLs now
 
 interface CollectionDetailViewProps {
@@ -183,13 +184,7 @@ export function CollectionDetailView({
             <div className="flex items-center justify-between mb-4">
               {/* Breadcrumb */}
               <div className="flex items-center gap-2 text-sm text-gray-400 [data-theme='light']_&:text-gray-500">
-                <button 
-                  onClick={onClose}
-                  className="hover:text-[#ff6b35] transition-colors flex items-center gap-1"
-                >
-                  <Home className="w-4 h-4" />
-                  <span className="hidden sm:inline">Home</span>
-                </button>
+                <ReturnToHomeButton />
                 <ChevronRight className="w-4 h-4" />
                 <button 
                   onClick={onBack}

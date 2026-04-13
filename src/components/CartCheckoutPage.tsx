@@ -10,6 +10,7 @@ import { getShippingDimensions } from '../utils/shipping-dimensions';
 import { useCart } from '../contexts/CartContext';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { AuthModal } from './AuthModal';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface ShippingRate {
   id: string;
@@ -1015,6 +1016,9 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
           />
         )}
       </AnimatePresence>
+      
+      {/* Return to Home Button */}
+      <ReturnToHomeButton />
     </motion.div>
   );
 }

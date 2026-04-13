@@ -190,7 +190,7 @@ export function TestimonialManagement({ adminInfo }: { adminInfo?: { email: stri
 
       if (response.ok) {
         const data = await response.json();
-        alert(data.message);
+        alert(data.message + '\n\n✅ Testimonials added successfully!\n\n💡 Tip: Refresh your homepage to see the new testimonials in the ReviewsCarousel.');
         await fetchTestimonials();
       } else {
         const error = await response.json();
@@ -492,7 +492,7 @@ export function TestimonialManagement({ adminInfo }: { adminInfo?: { email: stri
                     placeholder="https://images.unsplash.com/photo-..."
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Use Unsplash for professional headshots matching the customer's demographics
+                    Photo should show customer WITH their metal print (not just a portrait). Search Unsplash for "person with wall art" or "customer with framed print"
                   </p>
                 </div>
 

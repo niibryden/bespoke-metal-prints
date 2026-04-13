@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, Search, Grid, List, Filter, Image as ImageIcon, Eye, TrendingUp, Camera, Loader2, AlertCircle } from 'lucide-react';
 import { getServerUrl } from '../utils/serverUrl';
+import { publicAnonKey } from '../utils/supabase/info';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface MarketplaceBrowsePageProps {
   onClose: () => void;
@@ -62,7 +64,11 @@ export function MarketplaceBrowsePage({ onClose, onSelectPhoto }: MarketplaceBro
 
     try {
       console.log('📸 Loading marketplace photos from:', `${getServerUrl()}/marketplace/photos`);
-      const response = await fetch(`${getServerUrl()}/marketplace/photos`);
+      const response = await fetch(`${getServerUrl()}/marketplace/photos`, {
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`, // Supabase requires auth header even for public endpoints
+        },
+      });
 
       console.log('📡 Response status:', response.status);
 

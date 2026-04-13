@@ -45,6 +45,7 @@ interface ConfiguratorSectionProps {
   initialStep?: number;
   stockImageUrl?: string | null;
   onStockImageProcessed?: () => void;
+  onNavigateToStockPhotos?: () => void;
 }
 
 const steps = [
@@ -54,7 +55,7 @@ const steps = [
   { id: 4, name: 'Checkout', icon: ShoppingCart, description: 'Complete order' },
 ];
 
-export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl, onStockImageProcessed }: ConfiguratorSectionProps = {}) {
+export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl, onStockImageProcessed, onNavigateToStockPhotos }: ConfiguratorSectionProps = {}) {
   const [config, setConfig] = useState<Configuration>({
     image: initialConfig?.image || null,
     size: initialConfig?.size || '8" × 12"',
@@ -2477,7 +2478,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
 
                   {/* Browse Stock Photos Button */}
                   <motion.button
-                    onClick={() => setShowMarketplace(true)}
+                    onClick={() => onNavigateToStockPhotos?.()}
                     className="px-8 py-4 bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white rounded-xl hover:shadow-xl hover:shadow-[#ff6b35]/30 transition-all font-semibold text-lg flex items-center gap-3 mx-auto"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -2486,7 +2487,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
                     Browse Stock Photos
                   </motion.button>
                   <p className="text-gray-500 text-sm mt-3">
-                    Choose from our curated collection
+                    Choose from our curated collection (includes marketplace photos)
                   </p>
                 </div>
 

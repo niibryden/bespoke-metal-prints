@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Shield, ArrowLeft, CheckCircle } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface AdminBootstrapProps {
   onBack: () => void;

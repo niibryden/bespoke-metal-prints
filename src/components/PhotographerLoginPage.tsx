@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { X, Camera, Loader2, AlertCircle, Mail, Lock } from 'lucide-react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { getServerUrl } from '../utils/serverUrl';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface PhotographerLoginPageProps {
   onClose: () => void;

@@ -273,10 +273,20 @@ checkoutApp.post('/make-server-3e3a9cd7/checkout/validate-discount', async (c) =
 // Create Stripe payment intent (for Payment Elements)
 checkoutApp.post('/make-server-3e3a9cd7/create-payment-intent', async (c) => {
   try {
-    const { amount, currency = 'usd', metadata, userId, customerEmail, customerName, customerPhone } = await c.req.json();
+    const { amount, currency = 'usd', metadata, userId, customerEmail, customerName, customerPhone, discount } = await c.req.json();
     
     if (!amount) {
       return c.json({ error: 'Amount is required' }, 400);
+    }
+
+    // Log the received amount and discount info for debugging
+    console.log('💳 Creating payment intent:');
+    console.log('  Amount received from frontend: $' + amount.toFixed(2));
+    if (discount) {
+      console.log('  Discount Code:', discount.code);
+      console.log('  Discount Type:', discount.type);
+      console.log('  Discount Value:', discount.value);
+      console.log('  Discount Amount:', discount.discountAmount.toFixed(2));
     }
 
     const stripe = await getStripe();
@@ -310,24 +320,36 @@ checkoutApp.post('/make-server-3e3a9cd7/create-payment-intent', async (c) => {
         }
       }
     }
+    
+    // Add discount info to Stripe metadata for tracking
+    if (discount) {
+      stripeMetadata.discount_code = discount.code;
+      stripeMetadata.discount_type = discount.type;
+      stripeMetadata.discount_value = String(discount.value);
+      stripeMetadata.discount_amount = discount.discountAmount.toFixed(2);
+    }
+
+    // Convert amount to cents for Stripe
+    const amountInCents = Math.round(amount * 100);
+    console.log('  Amount in cents for Stripe:', amountInCents, `($${(amountInCents / 100).toFixed(2)})`);
 
     // Create payment intent with customer information
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: amountInCents,
       currency: currency,
       metadata: stripeMetadata,
       receipt_email: customerEmail,
       shipping: shipping,
       // Include customer name and phone in description for better Stripe dashboard UX
       description: customerName 
-        ? `Order from ${customerName}${customerPhone ? ` (${customerPhone})` : ''}` 
+        ? `Order from ${customerName}${customerPhone ? ` (${customerPhone})` : ''}${discount ? ` (Discount: ${discount.code})` : ''}` 
         : `Order from ${customerEmail}`,
       automatic_payment_methods: {
         enabled: true,
       },
     });
 
-    console.log(`✅ Created payment intent: ${paymentIntent.id} for customer: ${customerName || customerEmail}`);
+    console.log(`✅ Created payment intent: ${paymentIntent.id} for $${(paymentIntent.amount / 100).toFixed(2)} (customer: ${customerName || customerEmail})`);
 
     return c.json({
       success: true,

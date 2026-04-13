@@ -537,9 +537,14 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
       };
       
       console.log('💳 Creating payment intent for amount:', total);
+      console.log('📊 Price breakdown:');
+      console.log('  Base Price: $' + basePrice.toFixed(2));
       if (appliedDiscount) {
-        console.log(`💰 Discount applied: ${appliedDiscount.code} - Saving $${discountAmount.toFixed(2)} (Final total: $${total.toFixed(2)})`);
+        console.log(`  Discount (${appliedDiscount.code}): -$${discountAmount.toFixed(2)} (${appliedDiscount.type === 'percentage' ? appliedDiscount.value + '%' : '$' + appliedDiscount.value})`);
+        console.log('  Subtotal After Discount: $' + subtotalAfterDiscount.toFixed(2));
       }
+      console.log('  Shipping: $' + effectiveShippingCost.toFixed(2));
+      console.log('  TOTAL TO CHARGE: $' + total.toFixed(2));
       
       const paymentResponse = await fetch(`${serverUrl}/create-payment-intent`, {
         method: 'POST',

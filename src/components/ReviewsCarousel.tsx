@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Star, ChevronLeft, ChevronRight, Quote, CheckCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getServerUrl } from '../utils/serverUrl';
+import { publicAnonKey } from '../utils/supabase/info';
 
 interface Review {
   id: string;
@@ -31,16 +32,35 @@ export function ReviewsCarousel() {
 
   const fetchTestimonials = async () => {
     try {
-      const response = await fetch(`${serverUrl}/testimonials`);
+      // Add cache-busting parameter to ensure we get fresh data
+      const url = `${serverUrl}/testimonials?_t=${Date.now()}`;
+      console.log('🔄 Fetching testimonials from:', url);
+      const response = await fetch(url, {
+        cache: 'no-store', // Disable caching
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`, // Supabase requires auth header even for public endpoints
+        },
+      });
+      console.log('📥 Testimonials response status:', response.status);
+      console.log('📥 Testimonials response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Testimonials data received:', data);
+        
         if (data.testimonials && data.testimonials.length > 0) {
+          console.log(`✅ Using ${data.testimonials.length} live testimonials from database`);
           setReviews(data.testimonials);
         } else {
           // Fallback to sample data if no testimonials exist
+          console.log('⚠️ No testimonials in database, using fallback reviews');
           setReviews(FALLBACK_REVIEWS);
         }
       } else {
+        // Log the error response body
+        const errorText = await response.text();
+        console.error('❌ Failed to fetch testimonials, status:', response.status);
+        console.error('❌ Error response body:', errorText);
         // Fallback to sample data on error
         setReviews(FALLBACK_REVIEWS);
       }
@@ -75,6 +95,27 @@ export function ReviewsCarousel() {
   };
 
   const currentReview = reviews[currentIndex];
+
+  // Format date to relative time (e.g., "2 weeks ago")
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return '1 day ago';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 14) return '1 week ago';
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      if (diffDays < 60) return '1 month ago';
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+      return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) > 1 ? 's' : ''} ago`;
+    } catch (e) {
+      return dateString; // Fallback to original string if parsing fails
+    }
+  };
 
   // Don't render carousel if no reviews are available yet
   if (loading || !currentReview || reviews.length === 0) {
@@ -162,7 +203,7 @@ export function ReviewsCarousel() {
                           )}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {currentReview.location} • {currentReview.createdAt}
+                          {currentReview.location} • {formatDate(currentReview.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -256,7 +297,7 @@ const FALLBACK_REVIEWS: Review[] = [
     location: 'Atlanta, GA',
     rating: 5,
     text: 'Absolutely stunning! The metal print quality exceeded my expectations. The colors are vibrant and the clarity is incredible. It completely transformed my living room wall.',
-    imageUrl: 'https://images.unsplash.com/photo-1617791160536-598cf32026fb?w=400&h=300&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1516637617912-b0ee4c07a457?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBob2xkaW5nJTIwbWV0YWwlMjBwcmludCUyMHdhbGwlMjBhcnQlMjBob21lfGVufDF8fHx8MTc3NjA1NjE4NXww&ixlib=rb-4.1.0&q=80&w=1080',
     verified: true,
     createdAt: '2 weeks ago',
     updatedAt: '2 weeks ago',
@@ -267,7 +308,7 @@ const FALLBACK_REVIEWS: Review[] = [
     location: 'Austin, TX',
     rating: 5,
     text: 'Best purchase I\'ve made for my home office. The float mount gives it such a premium look, and the image quality is phenomenal. Shipping was super fast too!',
-    imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1593286101772-0d9e2621b8f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjdXN0b21lciUyMHdpdGglMjBmcmFtZWQlMjBhcnQlMjBwcmludCUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzc2MDU2MTg1fDA&ixlib=rb-4.1.0&q=80&w=1080',
     verified: true,
     createdAt: '1 month ago',
     updatedAt: '1 month ago',
@@ -278,7 +319,7 @@ const FALLBACK_REVIEWS: Review[] = [
     location: 'Denver, CO',
     rating: 5,
     text: 'I ordered three prints for my bedroom and they look amazing together. The matte finish is elegant and the colors are true to my original photos. Worth every penny!',
-    imageUrl: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400&h=300&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1568164528240-21ad793478dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjB3YWxsJTIwYXJ0JTIwaG9tZSUyMGRlY29yJTIwaGFwcHl8ZW58MXx8fHwxNzc2MDU2MTg4fDA&ixlib=rb-4.1.0&q=80&w=1080',
     verified: true,
     createdAt: '3 weeks ago',
     updatedAt: '3 weeks ago',
@@ -299,7 +340,7 @@ const FALLBACK_REVIEWS: Review[] = [
     location: 'Miami, FL',
     rating: 5,
     text: 'The gloss finish makes the colors pop beautifully. Perfect gift for my parents\' anniversary. They absolutely loved it and it arrived perfectly packaged.',
-    imageUrl: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=400&h=300&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1516637617912-b0ee4c07a457?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBob2xkaW5nJTIwbWV0YWwlMjBwcmludCUyMHdhbGwlMjBhcnQlMjBob21lfGVufDF8fHx8MTc3NjA1NjE4NXww&ixlib=rb-4.1.0&q=80&w=1080',
     verified: true,
     createdAt: '2 months ago',
     updatedAt: '2 months ago',

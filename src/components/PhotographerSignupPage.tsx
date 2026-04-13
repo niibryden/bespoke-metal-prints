@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { X, Camera, TrendingUp, DollarSign, Users, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { getServerUrl } from '../utils/serverUrl';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface PhotographerSignupPageProps {
   onClose: () => void;

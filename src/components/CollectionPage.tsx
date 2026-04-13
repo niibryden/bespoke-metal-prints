@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, ImageIcon, Printer, ChevronLeft, Grid3x3, List, Search as SearchIcon, Loader2, CheckCircle, ChevronRight } from 'lucide-react';
+import { X, ImageIcon, Printer, ChevronLeft, Grid3x3, List, Search as SearchIcon, Loader2, CheckCircle, ChevronRight, Home } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface CollectionPageProps {
   collection: {
@@ -112,13 +113,7 @@ export function CollectionPage({ collection, onClose, onBack, onCreateOrder }: C
           <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-gray-400 [data-theme='light']_&:text-gray-500">
-              <button 
-                onClick={onClose}
-                className="hover:text-[#ff6b35] transition-colors flex items-center gap-1"
-              >
-                <Home className="w-4 h-4" />
-                <span>Home</span>
-              </button>
+              <ReturnToHomeButton />
               <ChevronRight className="w-4 h-4" />
               <button
                 onClick={onBack}

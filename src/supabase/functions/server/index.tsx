@@ -191,6 +191,27 @@ app.get("/make-server-3e3a9cd7/inventory", async (c) => {
   }
 });
 
+// Public endpoint to get testimonials (for homepage ReviewsCarousel)
+app.get("/make-server-3e3a9cd7/testimonials", async (c) => {
+  try {
+    console.log('📝 Public testimonials endpoint called');
+    console.log('📝 Request headers:', Object.fromEntries(c.req.raw.headers.entries()));
+    const testimonials = await kv.getByPrefix('testimonial:') || [];
+    console.log(`📝 Found ${testimonials.length} testimonials in database`);
+    
+    // Sort by createdAt (newest first)
+    const sortedTestimonials = testimonials.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    console.log('📝 Returning testimonials, count:', sortedTestimonials.length);
+    return c.json({ testimonials: sortedTestimonials });
+  } catch (error: any) {
+    console.error('❌ Failed to fetch testimonials:', error);
+    return c.json({ error: 'Failed to fetch testimonials', details: error.message }, 500);
+  }
+});
+
 // Debug endpoint to inspect inventory with special characters visible
 app.get("/make-server-3e3a9cd7/inventory-debug", async (c) => {
   try {
@@ -533,23 +554,6 @@ app.post("/make-server-3e3a9cd7/track-marketplace-sale", async (c) => {
   } catch (error: any) {
     console.error('Error tracking marketplace sale:', error);
     return c.json({ error: error.message }, 500);
-  }
-});
-
-// Public endpoint to get testimonials (for homepage ReviewsCarousel)
-app.get("/make-server-3e3a9cd7/testimonials", async (c) => {
-  try {
-    const testimonials = await kv.getByPrefix('testimonial:') || [];
-    
-    // Sort by createdAt (newest first)
-    const sortedTestimonials = testimonials.sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-
-    return c.json({ testimonials: sortedTestimonials });
-  } catch (error: any) {
-    console.error('Failed to fetch testimonials:', error);
-    return c.json({ error: 'Failed to fetch testimonials' }, 500);
   }
 });
 

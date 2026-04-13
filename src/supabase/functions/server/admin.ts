@@ -3182,23 +3182,8 @@ import discountApp from './discount.ts';
 adminApp.route('/', discountApp);
 
 // ==================== TESTIMONIALS MANAGEMENT ====================
-
-// Get all testimonials (public endpoint - no auth required)
-adminApp.get('/make-server-3e3a9cd7/testimonials', async (c) => {
-  try {
-    const testimonials = await kv.getByPrefix('testimonial:') || [];
-    
-    // Sort by createdAt (newest first)
-    const sortedTestimonials = testimonials.sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-
-    return c.json({ testimonials: sortedTestimonials });
-  } catch (error: any) {
-    console.error('Failed to fetch testimonials:', error);
-    return c.json({ error: 'Failed to fetch testimonials' }, 500);
-  }
-});
+// Note: Public testimonials endpoint is now in index.tsx (no auth required)
+// This file only contains admin endpoints that require authentication
 
 // Get all testimonials for admin management (with auth)
 adminApp.get('/make-server-3e3a9cd7/admin/testimonials', async (c) => {
@@ -3357,7 +3342,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/testimonials/seed', async (c) => {
         location: 'Glen Burnie, MD',
         rating: 5,
         text: 'Outstanding quality! The metal print I ordered for my office looks absolutely professional. The colors are vibrant and the detail is incredible. Best investment I\'ve made for my workspace.',
-        imageUrl: 'https://images.unsplash.com/photo-1580411415491-a672219c801b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwYW1lcmljYW4lMjBtYW4lMjBwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdHxlbnwxfHx8fDE3NzYwNTQ1ODF8MA&ixlib=rb-4.1.0&q=80&w=1080',
+        imageUrl: 'https://images.unsplash.com/photo-1516637617912-b0ee4c07a457?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBob2xkaW5nJTIwbWV0YWwlMjBwcmludCUyMHdhbGwlMjBhcnQlMjBob21lfGVufDF8fHx8MTc3NjA1NjE4NXww&ixlib=rb-4.1.0&q=80&w=1080',
         verified: true,
         createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
@@ -3368,7 +3353,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/testimonials/seed', async (c) => {
         location: 'Stockbridge, GA',
         rating: 5,
         text: 'Absolutely love my metal print! The float mount makes it look so modern and sleek on my wall. The print quality exceeded all my expectations. Will definitely order more!',
-        imageUrl: 'https://images.unsplash.com/photo-1668752600261-e56e7f3780b6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwbWFuJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzc2MDU0NTgxfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        imageUrl: 'https://images.unsplash.com/photo-1593286101772-0d9e2621b8f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjdXN0b21lciUyMHdpdGglMjBmcmFtZWQlMjBhcnQlMjBwcmludCUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzc2MDU2MTg1fDA&ixlib=rb-4.1.0&q=80&w=1080',
         verified: true,
         createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
@@ -3379,7 +3364,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/testimonials/seed', async (c) => {
         location: 'Buford, GA',
         rating: 5,
         text: 'Best quality metal prints I\'ve ever seen! The packaging was excellent and the customer service was top-notch. My family photos look stunning on metal. Highly recommend!',
-        imageUrl: 'https://images.unsplash.com/photo-1717068341511-204207d72705?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMGhlYWRzaG90JTIwbWF0dXJlfGVufDF8fHx8MTc3NjA1NDU4MXww&ixlib=rb-4.1.0&q=80&w=1080',
+        imageUrl: 'https://images.unsplash.com/photo-1568164528240-21ad793478dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjB3YWxsJTIwYXJ0JTIwaG9tZSUyMGRlY29yJTIwaGFwcHl8ZW58MXx8fHwxNzc2MDU2MTg4fDA&ixlib=rb-4.1.0&q=80&w=1080',
         verified: true,
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),

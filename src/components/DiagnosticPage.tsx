@@ -1,6 +1,7 @@
 import React from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface DiagnosticPageProps {
   onClose: () => void;
@@ -30,6 +31,10 @@ export function DiagnosticPage({ onClose }: DiagnosticPageProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a] p-8">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <ReturnToHomeButton onClick={onClose} />
+        </div>
+        
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
           🔍 Diagnostic Tool
         </h1>

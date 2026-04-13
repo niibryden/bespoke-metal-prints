@@ -12,6 +12,56 @@ app.use('*', cors({
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 
+// Helper: Generate signed URLs for S3 images
+async function generateSignedUrl(s3Url: string): Promise<string> {
+  try {
+    // Extract the S3 key from the URL
+    // Format: https://bucket.s3.region.amazonaws.com/key
+    const urlMatch = s3Url.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/);
+    if (!urlMatch) {
+      console.warn('Not an S3 URL, returning as-is:', s3Url.substring(0, 50));
+      return s3Url;
+    }
+    
+    const bucket = urlMatch[1];
+    const region = urlMatch[2];
+    const key = decodeURIComponent(urlMatch[3]);
+    
+    const AWS_ACCESS_KEY_ID = Deno.env.get('AWS_ACCESS_KEY_ID');
+    const AWS_SECRET_ACCESS_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+    
+    if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
+      console.warn('AWS credentials not configured, returning direct URL');
+      return s3Url;
+    }
+    
+    // Import AWS SDK for signed URLs
+    const { S3Client } = await import('npm:@aws-sdk/client-s3@3');
+    const { getSignedUrl } = await import('npm:@aws-sdk/s3-request-presigner@3');
+    const { GetObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
+    
+    const s3Client = new S3Client({
+      region: region,
+      credentials: {
+        accessKeyId: AWS_ACCESS_KEY_ID,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+      },
+    });
+    
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    });
+    
+    // Generate signed URL valid for 1 hour
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    return signedUrl;
+  } catch (error) {
+    console.error('Failed to generate signed URL:', error);
+    return s3Url; // Return original URL as fallback
+  }
+}
+
 // Helper: Get authenticated user
 async function getAuthenticatedUser(authHeader: string | null) {
   if (!authHeader?.startsWith('Bearer ')) {
@@ -635,8 +685,26 @@ app.get("/make-server-3e3a9cd7/marketplace/photos", async (c) => {
           const photo = await kv.get(`marketplace:photo:${id}`);
           if (!photo) {
             console.warn(`⚠️ Photo ${id} not found in KV store`);
+            return null;
           }
-          return photo;
+          
+          // Generate signed URLs for S3 images
+          const photoWithSignedUrls = { ...photo };
+          
+          // Use web URL if available, otherwise original URL
+          const displayUrl = photo.webUrl || photo.s3Url;
+          
+          if (displayUrl) {
+            try {
+              photoWithSignedUrls.s3Url = await generateSignedUrl(displayUrl);
+              console.log(`🔑 Generated signed URL for photo ${id}`);
+            } catch (err) {
+              console.error(`❌ Failed to generate signed URL for photo ${id}:`, err);
+              // Keep original URL as fallback
+            }
+          }
+          
+          return photoWithSignedUrls;
         } catch (err) {
           console.error(`❌ Error fetching photo ${id}:`, err);
           return null;
@@ -645,7 +713,7 @@ app.get("/make-server-3e3a9cd7/marketplace/photos", async (c) => {
     );
     
     const validPhotos = photos.filter(Boolean);
-    console.log(`✅ Returning ${validPhotos.length} valid marketplace photos`);
+    console.log(`✅ Returning ${validPhotos.length} valid marketplace photos with signed URLs`);
     
     // Sort by upload date (newest first)
     validPhotos.sort((a: any, b: any) => 

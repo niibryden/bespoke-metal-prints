@@ -1,21 +1,18 @@
 import React from 'react';
 import { ArrowLeft, Code2, Settings, Zap, MessageCircle, Palette, Move } from 'lucide-react';
+import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 export function SupportSyncIntegrationPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
       {/* Header */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-[#2a2a2a]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <button 
-            onClick={() => window.history.back()} 
-            className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </button>
-          <h1 className="text-4xl font-bold text-gray-900">SupportSync Widget Integration</h1>
-          <p className="mt-2 text-lg text-gray-600">
+          <div className="mb-4">
+            <ReturnToHomeButton onClick={() => window.history.back()} />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">SupportSync Widget Integration</h1>
+          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
             Complete documentation of how the live chat widget was embedded into Bespoke Metal Prints
           </p>
         </div>
@@ -28,18 +25,18 @@ export function SupportSyncIntegrationPage() {
         <section className="mb-12">
           <div className="flex items-center mb-4">
             <MessageCircle className="w-6 h-6 text-orange-500 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">What is SupportSync?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">What is SupportSync?</h2>
           </div>
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-            <p className="text-gray-700 mb-4">
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+            <p className="text-gray-700 mb-4 dark:text-gray-300">
               SupportSync is a custom chatbot widget embedded directly into your Bespoke Metal Prints website. 
               It provides real-time customer support through an iframe-based chat interface that loads from a 
               separate Figma Site.
             </p>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Widget Features:</h3>
-                <ul className="space-y-1 text-gray-700">
+                <h3 className="font-semibold text-gray-900 mb-2 dark:text-white">Widget Features:</h3>
+                <ul className="space-y-1 text-gray-700 dark:text-gray-300">
                   <li>• Draggable floating button</li>
                   <li>• Orange branded (#fa8500)</li>
                   <li>• Persistent position storage</li>
@@ -49,8 +46,8 @@ export function SupportSyncIntegrationPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Technical Details:</h3>
-                <ul className="space-y-1 text-gray-700">
+                <h3 className="font-semibold text-gray-900 mb-2 dark:text-white">Technical Details:</h3>
+                <ul className="space-y-1 text-gray-700 dark:text-gray-300">
                   <li>• Iframe-based architecture</li>
                   <li>• Pure vanilla JavaScript</li>
                   <li>• Zero dependencies</li>
@@ -67,7 +64,7 @@ export function SupportSyncIntegrationPage() {
         <section className="mb-12">
           <div className="flex items-center mb-6">
             <Code2 className="w-6 h-6 text-orange-500 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">Step-by-Step Implementation</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Step-by-Step Implementation</h2>
           </div>
 
           {/* Step 1 */}
@@ -76,10 +73,10 @@ export function SupportSyncIntegrationPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 1
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Add Widget Configuration</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Add Widget Configuration</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Created a configuration object in <code className="bg-gray-200 px-2 py-1 rounded text-sm">/App.tsx</code> with:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
@@ -91,16 +88,16 @@ export function SupportSyncIntegrationPage() {
 };`}
               </pre>
               <div className="mt-3 space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>userId:</strong> Unique identifier for the widget instance
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>primaryColor:</strong> Brand orange color (#fa8500)
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>position:</strong> Bottom-right corner placement
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>baseUrl:</strong> URL of the Figma Site hosting the chat interface
                 </p>
               </div>
@@ -113,13 +110,13 @@ export function SupportSyncIntegrationPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 2
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Create Floating Launcher Button</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Create Floating Launcher Button</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Created a draggable button that appears in the bottom-right corner:
               </p>
-              <ul className="space-y-2 text-gray-700">
+              <ul className="space-y-2 text-gray-700 dark:text-gray-300">
                 <li>• <strong>Visual:</strong> Orange circle with chat icon</li>
                 <li>• <strong>Behavior:</strong> Click to open/close chat window</li>
                 <li>• <strong>Draggable:</strong> Click and drag to reposition</li>
@@ -141,10 +138,10 @@ export function SupportSyncIntegrationPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 3
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Build Chat Window Container</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Build Chat Window Container</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Created a fixed-position container to hold the chat iframe:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
@@ -165,16 +162,16 @@ export function SupportSyncIntegrationPage() {
 \`;`}
               </pre>
               <div className="mt-3 space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Positioning:</strong> Fixed bottom-right, positioned above launcher
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Sizing:</strong> 380x600px with responsive max-width/height
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Styling:</strong> White background, rounded corners, shadow
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Z-index:</strong> Very high (2147483646) to stay on top
                 </p>
               </div>
@@ -187,10 +184,10 @@ export function SupportSyncIntegrationPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 4
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Embed Chat Iframe</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Embed Chat Iframe</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Created an iframe that loads the SupportSync chat interface:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
@@ -206,13 +203,13 @@ frame.style.cssText = \`
 container.appendChild(frame);`}
               </pre>
               <div className="mt-3 space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Source:</strong> Figma Site with query parameters
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Parameters:</strong> widget-embed=true & userId for tracking
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Styling:</strong> Borderless, rounded, 100% container size
                 </p>
               </div>
@@ -225,10 +222,10 @@ container.appendChild(frame);`}
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 5
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Implement Open/Close Toggle</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Implement Open/Close Toggle</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Created smooth animation logic for showing/hiding the chat window:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
@@ -252,7 +249,7 @@ container.appendChild(frame);`}
   }
 }`}
               </pre>
-              <p className="text-sm text-gray-600 mt-3">
+              <p className="text-sm text-gray-600 mt-3 dark:text-gray-400">
                 Uses CSS transitions for smooth fade-in/fade-out with scale animation
               </p>
             </div>
@@ -264,13 +261,13 @@ container.appendChild(frame);`}
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 6
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Add Drag-and-Drop Functionality</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Add Drag-and-Drop Functionality</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Implemented mouse event handlers for dragging the launcher button:
               </p>
-              <ul className="space-y-2 text-gray-700">
+              <ul className="space-y-2 text-gray-700 dark:text-gray-300">
                 <li>• <strong>mousedown:</strong> Start dragging, capture initial position</li>
                 <li>• <strong>mousemove:</strong> Update button position during drag</li>
                 <li>• <strong>mouseup:</strong> End dragging, save position to localStorage</li>
@@ -297,10 +294,10 @@ if (savedPosition) {
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 7
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Expose Global API</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Expose Global API</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Created a global JavaScript API for programmatic control:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
@@ -327,10 +324,10 @@ if (savedPosition) {
               <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                 8
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-1">Wrap in React useEffect Hook</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-1 dark:text-white">Wrap in React useEffect Hook</h3>
             </div>
-            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 mb-3">
+            <div className="ml-11 bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <p className="text-gray-700 mb-3 dark:text-gray-300">
                 Wrapped the widget initialization in a React useEffect hook in <code className="bg-gray-200 px-2 py-1 rounded text-sm">/App.tsx</code>:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
@@ -357,13 +354,13 @@ if (savedPosition) {
 }, []);`}
               </pre>
               <div className="mt-3 space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Deduplication:</strong> Checks for existing widget to prevent duplicates
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Cleanup:</strong> Removes widget elements on component unmount
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <strong>Empty deps:</strong> Runs only once on initial mount
                 </p>
               </div>
@@ -375,18 +372,18 @@ if (savedPosition) {
         <section className="mb-12">
           <div className="flex items-center mb-4">
             <Settings className="w-6 h-6 text-orange-500 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">File Location & Code</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">File Location & Code</h2>
           </div>
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-            <p className="text-gray-700 mb-4">
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+            <p className="text-gray-700 mb-4 dark:text-gray-300">
               The entire widget implementation is located in:
             </p>
             <div className="bg-white border border-gray-300 rounded p-4 mb-4">
               <code className="text-orange-600 font-mono">/App.tsx</code>
               <p className="text-sm text-gray-600 mt-2">Lines 261-519 (approximately)</p>
             </div>
-            <p className="text-gray-700 mb-3">The code structure:</p>
-            <ul className="space-y-2 text-gray-700">
+            <p className="text-gray-700 mb-3 dark:text-gray-300">The code structure:</p>
+            <ul className="space-y-2 text-gray-700 dark:text-gray-300">
               <li>• <strong>Lines 261-267:</strong> useEffect hook initialization</li>
               <li>• <strong>Lines 273-278:</strong> Configuration object</li>
               <li>• <strong>Lines 280-290:</strong> State variables and localStorage</li>
@@ -403,13 +400,13 @@ if (savedPosition) {
         <section className="mb-12">
           <div className="flex items-center mb-4">
             <Palette className="w-6 h-6 text-orange-500 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">Customization Options</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Customization Options</h2>
           </div>
           <div className="space-y-4">
             {/* Color */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">Change Primary Color</h3>
-              <p className="text-gray-700 text-sm mb-2">
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <h3 className="font-semibold text-gray-900 mb-2 dark:text-white">Change Primary Color</h3>
+              <p className="text-gray-700 text-sm mb-2 dark:text-gray-300">
                 Update the <code className="bg-gray-200 px-2 py-1 rounded">primaryColor</code> in the config object:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-3 rounded text-sm">
@@ -420,9 +417,9 @@ primaryColor: '#10b981',  // Green`}
             </div>
 
             {/* Position */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">Change Default Position</h3>
-              <p className="text-gray-700 text-sm mb-2">
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <h3 className="font-semibold text-gray-900 mb-2 dark:text-white">Change Default Position</h3>
+              <p className="text-gray-700 text-sm mb-2 dark:text-gray-300">
                 Update the <code className="bg-gray-200 px-2 py-1 rounded">position</code> object:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-3 rounded text-sm">
@@ -433,9 +430,9 @@ let position = { right: 100, bottom: 20 }; // More left`}
             </div>
 
             {/* Size */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">Change Window Size</h3>
-              <p className="text-gray-700 text-sm mb-2">
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <h3 className="font-semibold text-gray-900 mb-2 dark:text-white">Change Window Size</h3>
+              <p className="text-gray-700 text-sm mb-2 dark:text-gray-300">
                 Update the dimensions in <code className="bg-gray-200 px-2 py-1 rounded">createChatWindow()</code>:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-3 rounded text-sm">
@@ -445,9 +442,9 @@ height: 600px;  // Chat window height`}
             </div>
 
             {/* Base URL */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">Change Chat Interface URL</h3>
-              <p className="text-gray-700 text-sm mb-2">
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <h3 className="font-semibold text-gray-900 mb-2 dark:text-white">Change Chat Interface URL</h3>
+              <p className="text-gray-700 text-sm mb-2 dark:text-gray-300">
                 Update the <code className="bg-gray-200 px-2 py-1 rounded">baseUrl</code> in config:
               </p>
               <pre className="bg-gray-900 text-gray-100 p-3 rounded text-sm">
@@ -462,17 +459,17 @@ height: 600px;  // Chat window height`}
         <section className="mb-12">
           <div className="flex items-center mb-4">
             <Zap className="w-6 h-6 text-orange-500 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">How It Works</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">How It Works</h2>
           </div>
-          <div className="bg-gradient-to-br from-orange-50 to-white rounded-lg p-6 border border-orange-200">
+          <div className="bg-gradient-to-br from-orange-50 to-white rounded-lg p-6 border border-orange-200 dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-[#3a3a3a] dark:border-[#5a5a5a]">
             <div className="space-y-4">
               <div className="flex items-start">
                 <div className="flex-shrink-0 w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold mr-3 mt-1">
                   1
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Page Load</h4>
-                  <p className="text-gray-700 text-sm">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Page Load</h4>
+                  <p className="text-gray-700 text-sm dark:text-gray-300">
                     When the site loads, React's useEffect hook executes the widget initialization code
                   </p>
                 </div>
@@ -483,8 +480,8 @@ height: 600px;  // Chat window height`}
                   2
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Widget Creation</h4>
-                  <p className="text-gray-700 text-sm">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Widget Creation</h4>
+                  <p className="text-gray-700 text-sm dark:text-gray-300">
                     Creates launcher button and chat window container, appends them to document.body
                   </p>
                 </div>
@@ -495,8 +492,8 @@ height: 600px;  // Chat window height`}
                   3
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Position Restoration</h4>
-                  <p className="text-gray-700 text-sm">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Position Restoration</h4>
+                  <p className="text-gray-700 text-sm dark:text-gray-300">
                     Checks localStorage for saved position, applies if found (otherwise uses default)
                   </p>
                 </div>
@@ -507,8 +504,8 @@ height: 600px;  // Chat window height`}
                   4
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">User Clicks Launcher</h4>
-                  <p className="text-gray-700 text-sm">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">User Clicks Launcher</h4>
+                  <p className="text-gray-700 text-sm dark:text-gray-300">
                     toggleWidget() function animates the chat window open/closed
                   </p>
                 </div>
@@ -519,8 +516,8 @@ height: 600px;  // Chat window height`}
                   5
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Iframe Loads</h4>
-                  <p className="text-gray-700 text-sm">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Iframe Loads</h4>
+                  <p className="text-gray-700 text-sm dark:text-gray-300">
                     Chat interface loads from Figma Site with userId parameter for tracking
                   </p>
                 </div>
@@ -531,8 +528,8 @@ height: 600px;  // Chat window height`}
                   6
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">User Drags Launcher</h4>
-                  <p className="text-gray-700 text-sm">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">User Drags Launcher</h4>
+                  <p className="text-gray-700 text-sm dark:text-gray-300">
                     Mouse events update position in real-time, saves to localStorage on mouseup
                   </p>
                 </div>
@@ -543,8 +540,8 @@ height: 600px;  // Chat window height`}
                   7
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Cleanup on Unmount</h4>
-                  <p className="text-gray-700 text-sm">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Cleanup on Unmount</h4>
+                  <p className="text-gray-700 text-sm dark:text-gray-300">
                     When App component unmounts, removes DOM elements and clears global API
                   </p>
                 </div>
@@ -557,13 +554,13 @@ height: 600px;  // Chat window height`}
         <section className="mb-12">
           <div className="flex items-center mb-4">
             <Code2 className="w-6 h-6 text-orange-500 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">Technical Architecture</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Technical Architecture</h2>
           </div>
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Frontend (Bespoke Metal Prints)</h3>
-                <ul className="space-y-2 text-gray-700 text-sm">
+                <h3 className="font-semibold text-gray-900 mb-3 dark:text-white">Frontend (Bespoke Metal Prints)</h3>
+                <ul className="space-y-2 text-gray-700 text-sm dark:text-gray-300">
                   <li>• React app with useEffect hook</li>
                   <li>• Vanilla JavaScript widget code</li>
                   <li>• DOM manipulation for UI</li>
@@ -573,8 +570,8 @@ height: 600px;  // Chat window height`}
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Backend (SupportSync Chat)</h3>
-                <ul className="space-y-2 text-gray-700 text-sm">
+                <h3 className="font-semibold text-gray-900 mb-3 dark:text-white">Backend (SupportSync Chat)</h3>
+                <ul className="space-y-2 text-gray-700 text-sm dark:text-gray-300">
                   <li>• Hosted on Figma Site</li>
                   <li>• Loaded via iframe</li>
                   <li>• Receives userId via URL params</li>
@@ -584,9 +581,9 @@ height: 600px;  // Chat window height`}
                 </ul>
               </div>
             </div>
-            <div className="mt-6 p-4 bg-white border border-gray-300 rounded">
-              <h3 className="font-semibold text-gray-900 mb-2">Communication Flow</h3>
-              <pre className="text-sm text-gray-700">
+            <div className="mt-6 p-4 bg-white border border-gray-300 rounded dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <h3 className="font-semibold text-gray-900 mb-2 dark:text-white">Communication Flow</h3>
+              <pre className="text-sm text-gray-700 dark:text-gray-300">
 {`Main Site (bespokemetalprints.com)
     │
     ├── Widget Script (App.tsx)
@@ -608,14 +605,14 @@ height: 600px;  // Chat window height`}
         <section className="mb-12">
           <div className="flex items-center mb-4">
             <Settings className="w-6 h-6 text-orange-500 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">Troubleshooting</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Troubleshooting</h2>
           </div>
           <div className="space-y-3">
-            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <summary className="font-semibold text-gray-900 cursor-pointer dark:text-white">
                 Widget not appearing on page
               </summary>
-              <div className="mt-3 text-gray-700 text-sm space-y-2">
+              <div className="mt-3 text-gray-700 text-sm space-y-2 dark:text-gray-300">
                 <p>Check browser console for errors. Common issues:</p>
                 <ul className="list-disc ml-5 space-y-1">
                   <li>Script blocked by ad blocker</li>
@@ -629,11 +626,11 @@ height: 600px;  // Chat window height`}
               </div>
             </details>
 
-            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <summary className="font-semibold text-gray-900 cursor-pointer dark:text-white">
                 Chat window is blank/not loading
               </summary>
-              <div className="mt-3 text-gray-700 text-sm space-y-2">
+              <div className="mt-3 text-gray-700 text-sm space-y-2 dark:text-gray-300">
                 <p>The iframe may not be loading the Figma Site. Check:</p>
                 <ul className="list-disc ml-5 space-y-1">
                   <li>Verify baseUrl is correct and accessible</li>
@@ -647,11 +644,11 @@ height: 600px;  // Chat window height`}
               </div>
             </details>
 
-            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <summary className="font-semibold text-gray-900 cursor-pointer dark:text-white">
                 Launcher button position resets on refresh
               </summary>
-              <div className="mt-3 text-gray-700 text-sm space-y-2">
+              <div className="mt-3 text-gray-700 text-sm space-y-2 dark:text-gray-300">
                 <p>localStorage may not be saving properly. Check:</p>
                 <ul className="list-disc ml-5 space-y-1">
                   <li>Browser localStorage is enabled (not in incognito)</li>
@@ -665,11 +662,11 @@ height: 600px;  // Chat window height`}
               </div>
             </details>
 
-            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <summary className="font-semibold text-gray-900 cursor-pointer dark:text-white">
                 Multiple widget instances appearing
               </summary>
-              <div className="mt-3 text-gray-700 text-sm space-y-2">
+              <div className="mt-3 text-gray-700 text-sm space-y-2 dark:text-gray-300">
                 <p>Widget may be initializing multiple times:</p>
                 <ul className="list-disc ml-5 space-y-1">
                   <li>Check deduplication logic is working</li>
@@ -683,11 +680,11 @@ height: 600px;  // Chat window height`}
               </div>
             </details>
 
-            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-50 rounded-lg p-4 border border-gray-200 dark:bg-[#1a1a1a] dark:border-[#3a3a3a]">
+              <summary className="font-semibold text-gray-900 cursor-pointer dark:text-white">
                 Widget covering important content
               </summary>
-              <div className="mt-3 text-gray-700 text-sm space-y-2">
+              <div className="mt-3 text-gray-700 text-sm space-y-2 dark:text-gray-300">
                 <p>Adjust the default position or window size:</p>
                 <ul className="list-disc ml-5 space-y-1">
                   <li>Change <code className="bg-gray-200 px-1 rounded">position.right</code> / <code className="bg-gray-200 px-1 rounded">position.bottom</code></li>

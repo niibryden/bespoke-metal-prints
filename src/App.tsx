@@ -652,6 +652,7 @@ export default function App() {
                       initialStep={reorderConfig ? 3 : undefined}
                       stockImageUrl={stockImageUrl}
                       onStockImageProcessed={() => setStockImageUrl(null)}
+                      onNavigateToStockPhotos={handleStockPhotosClick}
                     />
                     <Footer 
                       onAdminClick={handleGoToAdminLogin}

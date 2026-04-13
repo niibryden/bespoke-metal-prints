@@ -2,85 +2,67 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Star, ChevronLeft, ChevronRight, Quote, CheckCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { getServerUrl } from '../utils/serverUrl';
 
 interface Review {
-  id: number;
+  id: string;
   name: string;
   location: string;
   rating: number;
   text: string;
-  date: string;
   imageUrl?: string;
   verified: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// Sample reviews - replace with real reviews from your database
-const reviews: Review[] = [
-  {
-    id: 1,
-    name: 'Sarah M.',
-    location: 'Atlanta, GA',
-    rating: 5,
-    text: 'Absolutely stunning! The metal print quality exceeded my expectations. The colors are vibrant and the clarity is incredible. It completely transformed my living room wall.',
-    date: '2 weeks ago',
-    imageUrl: 'https://images.unsplash.com/photo-1617791160536-598cf32026fb?w=400&h=300&fit=crop',
-    verified: true,
-  },
-  {
-    id: 2,
-    name: 'Michael T.',
-    location: 'Austin, TX',
-    rating: 5,
-    text: 'Best purchase I\'ve made for my home office. The float mount gives it such a premium look, and the image quality is phenomenal. Shipping was super fast too!',
-    date: '1 month ago',
-    imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop',
-    verified: true,
-  },
-  {
-    id: 3,
-    name: 'Jessica L.',
-    location: 'Denver, CO',
-    rating: 5,
-    text: 'I ordered three prints for my bedroom and they look amazing together. The matte finish is elegant and the colors are true to my original photos. Worth every penny!',
-    date: '3 weeks ago',
-    imageUrl: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400&h=300&fit=crop',
-    verified: true,
-  },
-  {
-    id: 4,
-    name: 'David R.',
-    location: 'Seattle, WA',
-    rating: 5,
-    text: 'Customer service was excellent and the final product is museum quality. I\'ve received so many compliments on my metal print. Already planning my next order!',
-    date: '1 week ago',
-    verified: true,
-  },
-  {
-    id: 5,
-    name: 'Emily K.',
-    location: 'Miami, FL',
-    rating: 5,
-    text: 'The gloss finish makes the colors pop beautifully. Perfect gift for my parents\' anniversary. They absolutely loved it and it arrived perfectly packaged.',
-    date: '2 months ago',
-    imageUrl: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=400&h=300&fit=crop',
-    verified: true,
-  },
-];
-
 export function ReviewsCarousel() {
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const serverUrl = getServerUrl();
+
+  // Fetch testimonials from backend
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  const fetchTestimonials = async () => {
+    try {
+      const response = await fetch(`${serverUrl}/testimonials`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.testimonials && data.testimonials.length > 0) {
+          setReviews(data.testimonials);
+        } else {
+          // Fallback to sample data if no testimonials exist
+          setReviews(FALLBACK_REVIEWS);
+        }
+      } else {
+        // Fallback to sample data on error
+        setReviews(FALLBACK_REVIEWS);
+      }
+    } catch (error) {
+      console.error('Failed to fetch testimonials:', error);
+      // Fallback to sample data on error
+      setReviews(FALLBACK_REVIEWS);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Auto-advance carousel
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (!isAutoPlaying || reviews.length === 0) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % reviews.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAutoPlaying]);
+  }, [isAutoPlaying, reviews.length]);
 
   const goToPrevious = () => {
     setIsAutoPlaying(false);
@@ -93,6 +75,11 @@ export function ReviewsCarousel() {
   };
 
   const currentReview = reviews[currentIndex];
+
+  // Don't render carousel if no reviews are available yet
+  if (loading || !currentReview || reviews.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-16 md:py-24 bg-white dark:bg-black relative overflow-hidden">
@@ -175,7 +162,7 @@ export function ReviewsCarousel() {
                           )}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {currentReview.location} • {currentReview.date}
+                          {currentReview.location} • {currentReview.createdAt}
                         </p>
                       </div>
                     </div>
@@ -260,3 +247,61 @@ export function ReviewsCarousel() {
     </section>
   );
 }
+
+// Sample reviews - replace with real reviews from your database
+const FALLBACK_REVIEWS: Review[] = [
+  {
+    id: '1',
+    name: 'Sarah M.',
+    location: 'Atlanta, GA',
+    rating: 5,
+    text: 'Absolutely stunning! The metal print quality exceeded my expectations. The colors are vibrant and the clarity is incredible. It completely transformed my living room wall.',
+    imageUrl: 'https://images.unsplash.com/photo-1617791160536-598cf32026fb?w=400&h=300&fit=crop',
+    verified: true,
+    createdAt: '2 weeks ago',
+    updatedAt: '2 weeks ago',
+  },
+  {
+    id: '2',
+    name: 'Michael T.',
+    location: 'Austin, TX',
+    rating: 5,
+    text: 'Best purchase I\'ve made for my home office. The float mount gives it such a premium look, and the image quality is phenomenal. Shipping was super fast too!',
+    imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop',
+    verified: true,
+    createdAt: '1 month ago',
+    updatedAt: '1 month ago',
+  },
+  {
+    id: '3',
+    name: 'Jessica L.',
+    location: 'Denver, CO',
+    rating: 5,
+    text: 'I ordered three prints for my bedroom and they look amazing together. The matte finish is elegant and the colors are true to my original photos. Worth every penny!',
+    imageUrl: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400&h=300&fit=crop',
+    verified: true,
+    createdAt: '3 weeks ago',
+    updatedAt: '3 weeks ago',
+  },
+  {
+    id: '4',
+    name: 'David R.',
+    location: 'Seattle, WA',
+    rating: 5,
+    text: 'Customer service was excellent and the final product is museum quality. I\'ve received so many compliments on my metal print. Already planning my next order!',
+    verified: true,
+    createdAt: '1 week ago',
+    updatedAt: '1 week ago',
+  },
+  {
+    id: '5',
+    name: 'Emily K.',
+    location: 'Miami, FL',
+    rating: 5,
+    text: 'The gloss finish makes the colors pop beautifully. Perfect gift for my parents\' anniversary. They absolutely loved it and it arrived perfectly packaged.',
+    imageUrl: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=400&h=300&fit=crop',
+    verified: true,
+    createdAt: '2 months ago',
+    updatedAt: '2 months ago',
+  },
+];

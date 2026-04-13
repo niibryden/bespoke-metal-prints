@@ -11,6 +11,7 @@ import { AdminSettings } from './admin/AdminSettings';
 import { S3FolderManager } from './admin/S3FolderManager';
 import { ImageLibrary } from './admin/ImageLibrary';
 import { DiscountManagement } from './admin/DiscountManagement';
+import { TestimonialManagement } from './admin/TestimonialManagement';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -23,7 +24,8 @@ import {
   FolderOpen,
   Images,
   Tag,
-  Camera
+  Camera,
+  MessageSquare
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -31,7 +33,7 @@ interface AdminDashboardProps {
   adminInfo: { email: string; role: string; name: string; permissions: any; accessToken: string };
 }
 
-type ActiveTab = 'overview' | 'photos' | 'inventory' | 'orders' | 'settings' | 'export' | 'cleanup' | 's3-folders' | 'image-library' | 'discounts' | 'marketplace';
+type ActiveTab = 'overview' | 'photos' | 'inventory' | 'orders' | 'settings' | 'export' | 'cleanup' | 's3-folders' | 'image-library' | 'discounts' | 'marketplace' | 'testimonials';
 
 export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
@@ -61,6 +63,7 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
     { id: 'discounts' as const, label: 'Discounts', icon: Tag, permission: 'canManageInventory' },
     { id: 'settings' as const, label: 'Settings', icon: Settings, permission: 'canViewOrders' },
     { id: 'marketplace' as const, label: 'Marketplace Approvals', icon: Camera, permission: 'canManageInventory' },
+    { id: 'testimonials' as const, label: 'Testimonials', icon: MessageSquare, permission: 'canManageInventory' },
   ].filter(tab => !tab.permission || adminInfo.permissions?.[tab.permission]);
 
   console.log('✅ AdminDashboard - tabs after filter:', tabs);
@@ -152,6 +155,7 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
             {activeTab === 'image-library' && <ImageLibrary adminInfo={adminInfo} />}
             {activeTab === 'discounts' && <DiscountManagement adminInfo={adminInfo} />}
             {activeTab === 'marketplace' && <AdminMarketplaceApprovals adminEmail={adminInfo.email} />}
+            {activeTab === 'testimonials' && <TestimonialManagement adminInfo={adminInfo} />}
           </div>
         </div>
       </div>

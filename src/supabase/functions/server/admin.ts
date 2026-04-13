@@ -3181,4 +3181,227 @@ import discountApp from './discount.ts';
 // Mount discount routes
 adminApp.route('/', discountApp);
 
+// ==================== TESTIMONIALS MANAGEMENT ====================
+
+// Get all testimonials (public endpoint - no auth required)
+adminApp.get('/make-server-3e3a9cd7/testimonials', async (c) => {
+  try {
+    const testimonials = await kv.getByPrefix('testimonial:') || [];
+    
+    // Sort by createdAt (newest first)
+    const sortedTestimonials = testimonials.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return c.json({ testimonials: sortedTestimonials });
+  } catch (error: any) {
+    console.error('Failed to fetch testimonials:', error);
+    return c.json({ error: 'Failed to fetch testimonials' }, 500);
+  }
+});
+
+// Get all testimonials for admin management (with auth)
+adminApp.get('/make-server-3e3a9cd7/admin/testimonials', async (c) => {
+  try {
+    // Verify admin authentication
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const testimonials = await kv.getByPrefix('testimonial:') || [];
+    
+    // Sort by createdAt (newest first)
+    const sortedTestimonials = testimonials.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return c.json({ testimonials: sortedTestimonials });
+  } catch (error: any) {
+    console.error('Failed to fetch testimonials:', error);
+    return c.json({ error: 'Failed to fetch testimonials' }, 500);
+  }
+});
+
+// Create new testimonial
+adminApp.post('/make-server-3e3a9cd7/admin/testimonials', async (c) => {
+  try {
+    // Verify admin authentication
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { name, location, rating, text, imageUrl, verified } = await c.req.json();
+
+    if (!name || !location || !rating || !text) {
+      return c.json({ error: 'Name, location, rating, and text are required' }, 400);
+    }
+
+    // Generate unique ID
+    const testimonialId = `testimonial:${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    const testimonial = {
+      id: testimonialId,
+      name,
+      location,
+      rating: parseInt(rating),
+      text,
+      imageUrl: imageUrl || null,
+      verified: verified !== false, // Default to true
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await kv.set(testimonialId, testimonial);
+
+    console.log('✅ Testimonial created:', testimonialId);
+
+    return c.json({ success: true, testimonial });
+  } catch (error: any) {
+    console.error('Failed to create testimonial:', error);
+    return c.json({ error: 'Failed to create testimonial: ' + error.message }, 500);
+  }
+});
+
+// Update testimonial
+adminApp.put('/make-server-3e3a9cd7/admin/testimonials/:id', async (c) => {
+  try {
+    // Verify admin authentication
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const testimonialId = c.req.param('id');
+    const { name, location, rating, text, imageUrl, verified } = await c.req.json();
+
+    // Get existing testimonial
+    const existing = await kv.get(testimonialId);
+    if (!existing) {
+      return c.json({ error: 'Testimonial not found' }, 404);
+    }
+
+    const updated = {
+      ...existing,
+      name: name || existing.name,
+      location: location || existing.location,
+      rating: rating !== undefined ? parseInt(rating) : existing.rating,
+      text: text || existing.text,
+      imageUrl: imageUrl !== undefined ? imageUrl : existing.imageUrl,
+      verified: verified !== undefined ? verified : existing.verified,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await kv.set(testimonialId, updated);
+
+    console.log('✅ Testimonial updated:', testimonialId);
+
+    return c.json({ success: true, testimonial: updated });
+  } catch (error: any) {
+    console.error('Failed to update testimonial:', error);
+    return c.json({ error: 'Failed to update testimonial: ' + error.message }, 500);
+  }
+});
+
+// Delete testimonial
+adminApp.delete('/make-server-3e3a9cd7/admin/testimonials/:id', async (c) => {
+  try {
+    // Verify admin authentication
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const testimonialId = c.req.param('id');
+
+    // Check if testimonial exists
+    const existing = await kv.get(testimonialId);
+    if (!existing) {
+      return c.json({ error: 'Testimonial not found' }, 404);
+    }
+
+    await kv.del(testimonialId);
+
+    console.log('✅ Testimonial deleted:', testimonialId);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Failed to delete testimonial:', error);
+    return c.json({ error: 'Failed to delete testimonial: ' + error.message }, 500);
+  }
+});
+
+// Seed initial testimonials (run once to populate with your customers)
+adminApp.post('/make-server-3e3a9cd7/admin/testimonials/seed', async (c) => {
+  try {
+    // Verify admin authentication
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Check if testimonials already exist
+    const existing = await kv.getByPrefix('testimonial:');
+    if (existing && existing.length > 0) {
+      return c.json({ 
+        message: 'Testimonials already exist. Delete existing testimonials first if you want to reseed.',
+        count: existing.length 
+      }, 400);
+    }
+
+    const initialTestimonials = [
+      {
+        id: `testimonial:${Date.now()}-1`,
+        name: 'Eugene N.',
+        location: 'Glen Burnie, MD',
+        rating: 5,
+        text: 'Outstanding quality! The metal print I ordered for my office looks absolutely professional. The colors are vibrant and the detail is incredible. Best investment I\'ve made for my workspace.',
+        imageUrl: 'https://images.unsplash.com/photo-1580411415491-a672219c801b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwYW1lcmljYW4lMjBtYW4lMjBwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdHxlbnwxfHx8fDE3NzYwNTQ1ODF8MA&ixlib=rb-4.1.0&q=80&w=1080',
+        verified: true,
+        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: `testimonial:${Date.now()}-2`,
+        name: 'Jones O.',
+        location: 'Stockbridge, GA',
+        rating: 5,
+        text: 'Absolutely love my metal print! The float mount makes it look so modern and sleek on my wall. The print quality exceeded all my expectations. Will definitely order more!',
+        imageUrl: 'https://images.unsplash.com/photo-1668752600261-e56e7f3780b6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwbWFuJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzc2MDU0NTgxfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        verified: true,
+        createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: `testimonial:${Date.now()}-3`,
+        name: 'Martins O.',
+        location: 'Buford, GA',
+        rating: 5,
+        text: 'Best quality metal prints I\'ve ever seen! The packaging was excellent and the customer service was top-notch. My family photos look stunning on metal. Highly recommend!',
+        imageUrl: 'https://images.unsplash.com/photo-1717068341511-204207d72705?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMGhlYWRzaG90JTIwbWF0dXJlfGVufDF8fHx8MTc3NjA1NDU4MXww&ixlib=rb-4.1.0&q=80&w=1080',
+        verified: true,
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+
+    // Store all testimonials
+    for (const testimonial of initialTestimonials) {
+      await kv.set(testimonial.id, testimonial);
+    }
+
+    console.log('✅ Seeded', initialTestimonials.length, 'testimonials');
+
+    return c.json({ 
+      success: true, 
+      message: `Successfully seeded ${initialTestimonials.length} testimonials`,
+      testimonials: initialTestimonials 
+    });
+  } catch (error: any) {
+    console.error('Failed to seed testimonials:', error);
+    return c.json({ error: 'Failed to seed testimonials: ' + error.message }, 500);
+  }
+});
+
 export default adminApp;

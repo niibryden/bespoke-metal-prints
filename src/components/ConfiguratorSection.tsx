@@ -703,34 +703,58 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
     if (!stockImageUrl) return;
     
     console.log('✅ ConfiguratorSection: Stock image URL received via props:', stockImageUrl.substring(0, 80));
+    console.log('📊 ConfiguratorSection: URL analysis:', {
+      isSignedUrl: stockImageUrl.includes('X-Amz-Algorithm') || stockImageUrl.includes('X-Amz-Signature'),
+      hasMarketplace: stockImageUrl.includes('marketplace'),
+      hasOriginal: stockImageUrl.includes('/original/'),
+      hasWeb: stockImageUrl.includes('/web/'),
+      urlLength: stockImageUrl.length,
+    });
     
     // NO CONVERSION NEEDED - S3 images are now public-read with CORS headers
     // Directly use the URL for instant loading!
     const processStockImage = async () => {
       try {
-        console.log('⚡ Loading stock image via proxy with CORS support');
-        console.log('📷 Original S3 URL:', stockImageUrl.substring(0, 100) + '...');
+        console.log('⚡ Loading stock image');
+        console.log('📷 Stock image URL:', stockImageUrl.substring(0, 100) + '...');
         
-        // Use proxy endpoint which returns image with proper CORS headers
-        const serverUrl = getServerUrl();
-        const proxyUrl = `${serverUrl}/proxy-image?url=${encodeURIComponent(stockImageUrl)}`;
-        console.log('🔗 Full Proxy URL:', proxyUrl);
+        // Check if URL is already a signed URL (contains AWS signature parameters)
+        const isSignedUrl = stockImageUrl.includes('X-Amz-Algorithm') || stockImageUrl.includes('X-Amz-Signature');
         
-        // Fetch image with authentication and convert to blob URL
-        console.log('🔍 Fetching image via proxy with authentication...');
-        const imageResponse = await fetch(proxyUrl, {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
+        let imageResponse;
+        
+        if (isSignedUrl) {
+          console.log('✅ URL is already signed, fetching directly without proxy');
+          // URL is already signed, fetch directly
+          imageResponse = await fetch(stockImageUrl);
+        } else {
+          console.log('🔗 URL is not signed, using proxy endpoint');
+          // Use proxy endpoint which returns image with proper CORS headers
+          const serverUrl = getServerUrl();
+          const proxyUrl = `${serverUrl}/proxy-image?url=${encodeURIComponent(stockImageUrl)}`;
+          console.log('🔗 Full Proxy URL:', proxyUrl);
+          
+          // Fetch image with authentication and convert to blob URL
+          console.log('🔍 Fetching image via proxy with authentication...');
+          imageResponse = await fetch(proxyUrl, {
+            headers: {
+              'Authorization': `Bearer ${publicAnonKey}`
+            }
+          });
+        }
+        
+        console.log('🔍 Response status:', imageResponse.status);
+        console.log('🔍 Response ok:', imageResponse.ok);
+        console.log('🔍 Response headers:', {
+          contentType: imageResponse.headers.get('content-type'),
+          contentLength: imageResponse.headers.get('content-length'),
         });
-        
-        console.log('🔍 Proxy response status:', imageResponse.status);
-        console.log('🔍 Proxy response ok:', imageResponse.ok);
         
         if (!imageResponse.ok) {
           const errorText = await imageResponse.text();
-          console.error('❌ Proxy returned error:', errorText);
-          throw new Error(`Proxy endpoint returned ${imageResponse.status}: ${errorText.substring(0, 200)}`);
+          console.error('❌ Fetch returned error:', errorText);
+          console.error('❌ Full error response:', errorText);
+          throw new Error(`Failed to fetch image (${imageResponse.status}): ${errorText.substring(0, 200)}`);
         }
         
         // Check content type
@@ -739,8 +763,8 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         
         if (!contentType || !contentType.startsWith('image/')) {
           const responseText = await imageResponse.text();
-          console.error('❌ Proxy did not return an image. Response:', responseText.substring(0, 500));
-          throw new Error(`Proxy endpoint did not return an image (content-type: ${contentType})`);
+          console.error('❌ Response did not return an image. Response:', responseText.substring(0, 500));
+          throw new Error(`Did not receive an image (content-type: ${contentType})`);
         }
         
         // Convert response to blob and create Object URL
@@ -836,9 +860,21 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         console.warn('     "AllowedMethods": ["GET"],');
         console.warn('     "AllowedHeaders": ["*"]');
         console.warn('   }');
+        // Provide helpful error message
+        let errorMessage = 'Failed to load stock photo.';
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          errorMessage = 'This photo is no longer available. Please choose a different photo.';
+        } else {
+          errorMessage = 'Failed to load stock photo. Please try another photo.';
+        }
+        
         setToast({
-          message: 'Failed to load stock photo. Please check S3 CORS configuration or try another photo.',
-          type: 'error'
+          message: errorMessage,
+          type: 'error',
+          action: onNavigateToStockPhotos ? {
+            label: 'Choose Another',
+            onClick: onNavigateToStockPhotos
+          } : undefined
         });
         
         // Don't clear the stockImageUrl - let user try again or go back

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, Camera, TrendingUp, DollarSign, Users, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { getSupabaseClient } from '../utils/supabase/client';
@@ -21,6 +21,26 @@ export function PhotographerSignupPage({ onClose, onSuccess }: PhotographerSignu
     portfolioUrl: '',
     instagramHandle: '',
   });
+
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const scrollY = window.scrollY;
+    
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,27 +111,22 @@ export function PhotographerSignupPage({ onClose, onSuccess }: PhotographerSignu
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] bg-white dark:bg-black overflow-y-auto"
+      className="fixed inset-0 z-[9999] bg-white dark:bg-black flex items-center justify-center overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-gray-200 dark:border-[#ff6b35]/20 shadow-lg">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Camera className="w-6 h-6 text-[#ff6b35]" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Become a Photographer
-            </h1>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+      {/* Close button - top right */}
+      <button
+        onClick={onClose}
+        className="fixed top-6 right-6 z-20 p-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors"
+      >
+        <X className="w-6 h-6" />
+      </button>
+
+      {/* Return to Home - top left */}
+      <div className="fixed top-6 left-6 z-20">
+        <ReturnToHomeButton onClick={onClose} />
       </div>
 
       <div className="container mx-auto px-6 py-12 max-w-4xl">

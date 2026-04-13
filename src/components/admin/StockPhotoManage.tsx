@@ -292,6 +292,50 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
     }
   };
 
+  const cleanupBrokenPhotos = async () => {
+    if (!confirm('🔍 BROKEN PHOTO CLEANUP\n\nThis will:\n• Scan all marketplace photos in collections\n• Check if files exist in S3\n• Remove broken/missing photos\n\n✅ Regular stock photos will NOT be affected\n\nContinue?')) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${serverUrl}/admin/cleanup-broken-photos`, {
+        method: 'POST',
+        headers: {
+          'Authorization': getAuthHeader(),
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const message = data.brokenPhotos.length > 0
+          ? [
+              'Cleanup Complete!',
+              `• Removed ${data.totalRemoved} broken photo(s)`,
+              '',
+              'Broken photos:',
+              ...data.brokenPhotos.map((p: any) => `  - ${p.name} (${p.collection})`),
+            ].join('\n')
+          : 'No broken photos found! All marketplace photos are valid.';
+        
+        alert(message);
+        fetchCollections();
+        
+        // Dispatch event to notify all components
+        window.dispatchEvent(new Event('collectionsUpdated'));
+      } else {
+        const error = await response.json();
+        alert(`Failed to cleanup broken photos: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to cleanup broken photos:', error);
+      alert('Failed to cleanup broken photos. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const repopulateCollections = async () => {
     if (!confirm('This will add photos to all empty collections from Unsplash. Collections that already have photos will be skipped. Continue?')) {
       return;
@@ -507,6 +551,14 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                 title: 'Update collection descriptions',
                 icon: Edit2,
                 label: 'Update Descriptions',
+              },
+              {
+                key: 'cleanup-broken',
+                onClick: cleanupBrokenPhotos,
+                className: 'bg-purple-600/10 text-purple-500 border-purple-500/20 hover:bg-purple-600/20',
+                title: 'Remove broken marketplace photos from collections',
+                icon: AlertTriangle,
+                label: 'Fix Broken Photos',
               },
               {
                 key: 'cleanup-collections',

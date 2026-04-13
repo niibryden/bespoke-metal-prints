@@ -19,10 +19,10 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
   }, []);
 
   return (
-    <div className={`min-h-screen bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 [data-theme='light']_&:bg-white transition-all duration-300`}>
+    <div className={`min-h-screen bg-white dark:bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 transition-all duration-300`}>
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Back Button */}
-        <ReturnToHomeButton onClick={onBack} variant="dark" className="mb-8" />
+        <ReturnToHomeButton onClick={onBack} className="mb-8" />
 
         {/* Header */}
         <motion.div
@@ -32,11 +32,11 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
         >
           <div className="flex items-center justify-center gap-3 mb-4">
             <FileText className="w-8 h-8 text-[#ff6b35]" />
-            <h1 className="text-4xl md:text-5xl text-white [data-theme='light']_&:text-black">
+            <h1 className="text-4xl md:text-5xl text-black dark:text-white">
               Terms & Conditions
             </h1>
           </div>
-          <p className="text-gray-400 text-lg [data-theme='light']_&:text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
             Last updated: February 5, 2026
           </p>
         </motion.div>
@@ -49,12 +49,12 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           transition={{ delay: 0.1 }}
         >
           {/* Agreement */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <ShieldCheck className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Agreement to Terms</h2>
-                <p className="text-gray-300 leading-relaxed [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Agreement to Terms</h2>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                   Welcome to Bespoke Metal Prints. By accessing our website and placing orders with us, you agree to be bound 
                   by these Terms and Conditions. Please read them carefully before using our services. If you do not agree with 
                   any part of these terms, you may not use our website or services.
@@ -64,12 +64,12 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Services */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <Package className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Services</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Services</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                   <p className="leading-relaxed">
                     Bespoke Metal Prints provides custom metal printing services for your photos and artwork. Our services include:
                   </p>
@@ -101,14 +101,14 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Orders and Payment */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <CreditCard className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Orders and Payment</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Orders and Payment</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Order Acceptance</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Order Acceptance</h3>
                     <p className="leading-relaxed">
                       All orders are subject to acceptance and availability. We reserve the right to refuse or cancel any order 
                       for any reason, including but not limited to product availability, errors in product or pricing information, 
@@ -117,7 +117,7 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
                   </div>
 
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Pricing</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Pricing</h3>
                     <p className="leading-relaxed">
                       All prices are in USD and are subject to change without notice. The price you pay is the price displayed 
                       at the time of order placement. We do not offer price matching or retroactive price adjustments.
@@ -125,7 +125,7 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
                   </div>
 
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Payment</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Payment</h3>
                     <p className="leading-relaxed mb-2">
                       Payment is processed securely through Stripe. We accept:
                     </p>
@@ -146,7 +146,7 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
                   </div>
 
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Discounts and Promotions</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Discounts and Promotions</h3>
                     <p className="leading-relaxed">
                       Discount codes and promotional offers may be subject to specific terms and conditions. Only one discount 
                       code may be used per order unless otherwise specified. Discount codes cannot be applied retroactively to 
@@ -159,11 +159,11 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Image Guidelines */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Image Upload Guidelines</h2>
-            <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Image Upload Guidelines</h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300">
               <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Your Responsibility</h3>
+                <h3 className="text-lg text-black dark:text-white mb-2">Your Responsibility</h3>
                 <p className="leading-relaxed mb-2">
                   When uploading images for printing, you represent and warrant that:
                 </p>
@@ -188,7 +188,7 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
               </div>
 
               <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Image Quality</h3>
+                <h3 className="text-lg text-black dark:text-white mb-2">Image Quality</h3>
                 <p className="leading-relaxed">
                   We recommend high-resolution images for best print quality. While we will print images of any resolution, 
                   we cannot guarantee quality results for low-resolution images. We are not responsible for poor print quality 
@@ -207,11 +207,11 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Production and Shipping */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Production and Shipping</h2>
-            <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Production and Shipping</h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300">
               <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Production Time</h3>
+                <h3 className="text-lg text-black dark:text-white mb-2">Production Time</h3>
                 <p className="leading-relaxed">
                   Standard production time is 5-7 business days. Rush order upgrades are available for 2-3 business day production. 
                   Production times do not include shipping transit time.
@@ -219,7 +219,7 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
               </div>
 
               <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Shipping</h3>
+                <h3 className="text-lg text-black dark:text-white mb-2">Shipping</h3>
                 <p className="leading-relaxed">
                   We ship via trusted carriers (USPS, UPS, FedEx) based on your selected shipping speed. Once shipped, you will 
                   receive tracking information via email. Shipping times are estimates and not guaranteed. We are not responsible 
@@ -228,7 +228,7 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
               </div>
 
               <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Order Modifications</h3>
+                <h3 className="text-lg text-black dark:text-white mb-2">Order Modifications</h3>
                 <p className="leading-relaxed">
                   Orders cannot be modified or canceled once production has begun. Please review your order carefully before 
                   completing checkout. Contact us immediately if you need to make changes to an order that has not yet entered 
@@ -239,9 +239,9 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Quality and Guarantee */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Quality Guarantee</h2>
-            <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Quality Guarantee</h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300">
               <p className="leading-relaxed">
                 We stand behind the quality of our products. If you receive a defective or damaged product, or if there was 
                 an error on our part, please contact us within 7 days of delivery. We will:
@@ -281,12 +281,12 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Limitation of Liability */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <Scale className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Limitation of Liability</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Limitation of Liability</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                   <p className="leading-relaxed">
                     To the maximum extent permitted by law, Bespoke Metal Prints shall not be liable for any indirect, incidental, 
                     special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or 
@@ -302,9 +302,9 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Intellectual Property */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Intellectual Property</h2>
-            <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Intellectual Property</h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300">
               <p className="leading-relaxed">
                 All content on this website, including but not limited to text, graphics, logos, images, and software, is the 
                 property of Bespoke Metal Prints or its content suppliers and is protected by United States and international 
@@ -318,32 +318,32 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* SMS Terms of Service */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <MessageSquare className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">SMS Terms of Service</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">SMS Terms of Service</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                   <p className="leading-relaxed">
-                    By opting in to SMS communications from <strong className="text-white [data-theme='light']_&:text-black">Bespoke Metal Prints</strong>, 
+                    By opting in to SMS communications from <strong className="text-black dark:text-white">Bespoke Metal Prints</strong>, 
                     you agree to receive transactional text messages including order confirmations, shipping updates, and customer support communications.
                   </p>
                   <ul className="space-y-2 ml-4">
                     <li className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span><strong className="text-white [data-theme='light']_&:text-black">Message frequency varies</strong></span>
+                      <span><strong className="text-black dark:text-white">Message frequency varies</strong></span>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span><strong className="text-white [data-theme='light']_&:text-black">Message and data rates may apply</strong></span>
+                      <span><strong className="text-black dark:text-white">Message and data rates may apply</strong></span>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span>Reply <strong className="text-white [data-theme='light']_&:text-black">STOP</strong> to opt out</span>
+                      <span>Reply <strong className="text-black dark:text-white">STOP</strong> to opt out</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span>Reply <strong className="text-white [data-theme='light']_&:text-black">HELP</strong> for help</span>
+                      <span>Reply <strong className="text-black dark:text-white">HELP</strong> for help</span>
                     </li>
                   </ul>
                   <div className="bg-[#ff6b35]/10 border border-[#ff6b35]/30 rounded-lg p-4 mt-4">
@@ -369,9 +369,9 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Governing Law */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Governing Law</h2>
-            <p className="text-gray-300 leading-relaxed [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Governing Law</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               These Terms and Conditions shall be governed by and construed in accordance with the laws of the State of Georgia, 
               United States, without regard to its conflict of law provisions. Any legal action or proceeding arising under these 
               terms shall be brought exclusively in the courts located in Georgia.
@@ -379,12 +379,12 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
           </section>
 
           {/* Changes to Terms */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <AlertCircle className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Changes to Terms</h2>
-                <p className="text-gray-300 leading-relaxed [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Changes to Terms</h2>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                   We reserve the right to modify these Terms and Conditions at any time. Changes will be effective immediately 
                   upon posting to the website. Your continued use of our services after changes are posted constitutes your 
                   acceptance of the modified terms. We encourage you to review these terms periodically.
@@ -395,25 +395,25 @@ export function TermsConditionsPage({ onBack }: TermsConditionsPageProps) {
 
           {/* Contact */}
           <section className="bg-gradient-to-r from-[#ff6b35]/10 to-[#ff8c42]/10 rounded-2xl p-8 border border-[#ff6b35]/30 text-center">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Questions About These Terms?</h2>
-            <p className="text-gray-300 mb-6 [data-theme='light']_&:text-gray-700">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Questions About These Terms?</h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
               If you have questions about these Terms and Conditions, please contact us:
             </p>
-            <div className="space-y-3 text-gray-300 [data-theme='light']_&:text-gray-700">
+            <div className="space-y-3 text-gray-700 dark:text-gray-300">
               <p>
-                <strong className="text-white [data-theme='light']_&:text-black">Email:</strong>{' '}
+                <strong className="text-black dark:text-white">Email:</strong>{' '}
                 <a href="mailto:info@bespokemetalprints.com" className="text-[#ff6b35] hover:underline">
                   info@bespokemetalprints.com
                 </a>
               </p>
               <p>
-                <strong className="text-white [data-theme='light']_&:text-black">Phone:</strong>{' '}
+                <strong className="text-black dark:text-white">Phone:</strong>{' '}
                 <a href="tel:+18578582288" className="text-[#ff6b35] hover:underline">
                   (857) 858-2288
                 </a>
               </p>
               <p>
-                <strong className="text-white [data-theme='light']_&:text-black">Mail:</strong> Bespoke Metal Prints<br />
+                <strong className="text-black dark:text-white">Mail:</strong> Bespoke Metal Prints<br />
                 4920 Bells Ferry Road<br />
                 Ste 134-2081<br />
                 Kennesaw GA 30144<br />

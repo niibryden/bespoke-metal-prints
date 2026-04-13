@@ -81,28 +81,25 @@ export function AdminBootstrap({ onBack, onSuccess }: AdminBootstrapProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] flex items-center justify-center p-4">
+      {/* Return to Home - top left */}
+      <div className="fixed top-6 left-6 z-20">
+        <ReturnToHomeButton onClick={onBack} />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full"
+        className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl p-8 max-w-md w-full border dark:border-[#2a2a2a]"
       >
-        <button
-          onClick={onBack}
-          className="mb-6 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </button>
-
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full mb-4">
             <Shield className="w-8 h-8 text-[#ff6b35]" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Bootstrap Admin
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Create the first admin account for Bespoke Metal Prints
           </p>
         </div>

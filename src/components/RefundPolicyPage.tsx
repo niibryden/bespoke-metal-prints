@@ -19,7 +19,7 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
   }, []);
 
   return (
-    <div className={`min-h-screen bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 [data-theme='light']_&:bg-white transition-all duration-300`}>
+    <div className={`min-h-screen bg-white dark:bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 transition-all duration-300`}>
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Return to Home Button */}
         <div className="mb-8">
@@ -34,11 +34,11 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
         >
           <div className="flex items-center justify-center gap-3 mb-4">
             <Shield className="w-8 h-8 text-[#ff6b35]" />
-            <h1 className="text-4xl md:text-5xl text-white [data-theme='light']_&:text-black">
+            <h1 className="text-4xl md:text-5xl text-black dark:text-white">
               Refund & Cancellation Policy
             </h1>
           </div>
-          <p className="text-gray-400 text-lg [data-theme='light']_&:text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
             Last updated: November 10, 2025
           </p>
         </motion.div>
@@ -51,12 +51,12 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
           transition={{ delay: 0.1 }}
         >
           {/* Overview */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <AlertCircle className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Overview</h2>
-                <p className="text-gray-300 leading-relaxed [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Overview</h2>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                   At Bespoke Metal Prints, we take pride in creating custom, high-quality metal prints tailored specifically to your order. 
                   Due to the personalized nature of our products, we have specific policies regarding refunds and cancellations.
                 </p>
@@ -65,14 +65,14 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
           </section>
 
           {/* Order Cancellation */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <Clock className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Order Cancellation</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Order Cancellation</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Before Production</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Before Production</h3>
                     <p className="leading-relaxed">
                       Orders can be cancelled for a full refund within <strong className="text-[#ff6b35]">24 hours</strong> of placement, 
                       provided production has not yet begun. To cancel your order, please contact us immediately at 
@@ -82,7 +82,7 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
                     </p>
                   </div>
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">After Production Begins</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">After Production Begins</h3>
                     <p className="leading-relaxed">
                       Once production has started (typically 24 hours after order placement), orders cannot be cancelled as materials 
                       have been committed and the printing process has commenced. We begin production quickly to ensure fast delivery.
@@ -100,14 +100,14 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
           </section>
 
           {/* Refund Policy */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <Package className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Refund Policy</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Refund Policy</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Defective or Damaged Products</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Defective or Damaged Products</h3>
                     <p className="leading-relaxed mb-2">
                       We stand behind the quality of our products. If your metal print arrives damaged or with a manufacturing defect, 
                       we will provide a full refund or replacement at no additional cost.
@@ -121,7 +121,7 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
                   </div>
                   
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Customer Error</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Customer Error</h3>
                     <p className="leading-relaxed">
                       If you uploaded an incorrect image, selected wrong specifications, or made an error during the ordering process, 
                       we unfortunately cannot offer refunds as each print is custom-made to your exact specifications. 
@@ -130,7 +130,7 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
                   </div>
 
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Quality Not As Expected</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Quality Not As Expected</h3>
                     <p className="leading-relaxed mb-2">
                       We strive for 100% customer satisfaction. If you're unsatisfied with the quality of your print (not due to 
                       image resolution or customer error), please contact us within 14 days of delivery. We review these cases 
@@ -144,7 +144,7 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
                   </div>
 
                   <div>
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Lost or Missing Orders</h3>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Lost or Missing Orders</h3>
                     <p className="leading-relaxed">
                       If your order doesn't arrive within the expected delivery window and tracking shows it as lost, we will 
                       issue a full refund or send a replacement at no charge. Please allow 2-3 business days after the expected 
@@ -157,23 +157,23 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
           </section>
 
           {/* Refund Process */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Refund Process</h2>
-            <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Refund Process</h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300">
               <div className="grid md:grid-cols-3 gap-4">
-                <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
+                <div className="bg-white dark:bg-[#0a0a0a] p-4 rounded-lg border border-gray-200 dark:border-[#ff6b35]/10">
                   <div className="text-3xl text-[#ff6b35] mb-2">1</div>
-                  <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Contact Us</h3>
+                  <h3 className="text-black dark:text-white mb-2">Contact Us</h3>
                   <p className="text-sm">Email us with your order details and issue description within the applicable timeframe.</p>
                 </div>
-                <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
+                <div className="bg-white dark:bg-[#0a0a0a] p-4 rounded-lg border border-gray-200 dark:border-[#ff6b35]/10">
                   <div className="text-3xl text-[#ff6b35] mb-2">2</div>
-                  <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Review</h3>
+                  <h3 className="text-black dark:text-white mb-2">Review</h3>
                   <p className="text-sm">Our team reviews your request within 1-2 business days and may request additional information.</p>
                 </div>
-                <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
+                <div className="bg-white dark:bg-[#0a0a0a] p-4 rounded-lg border border-gray-200 dark:border-[#ff6b35]/10">
                   <div className="text-3xl text-[#ff6b35] mb-2">3</div>
-                  <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Resolution</h3>
+                  <h3 className="text-black dark:text-white mb-2">Resolution</h3>
                   <p className="text-sm">Approved refunds are processed within 5-7 business days to your original payment method.</p>
                 </div>
               </div>
@@ -182,8 +182,8 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
 
           {/* Important Notes */}
           <section className="bg-gradient-to-r from-[#ff6b35]/10 to-[#ff8c42]/10 rounded-2xl p-8 border border-[#ff6b35]/30">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Important Notes</h2>
-            <ul className="space-y-3 text-gray-300 [data-theme='light']_&:text-gray-700">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Important Notes</h2>
+            <ul className="space-y-3 text-gray-700 dark:text-gray-300">
               <li className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
                 <span>All custom orders are final sale unless defective or damaged in transit</span>
@@ -204,9 +204,9 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
           </section>
 
           {/* Contact */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 text-center [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Questions About Our Policy?</h2>
-            <p className="text-gray-300 mb-6 [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20 text-center">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Questions About Our Policy?</h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
               If you have any questions about our refund and cancellation policy, please don't hesitate to reach out.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -218,7 +218,7 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
               </a>
               <a
                 href="tel:+1-555-PRINTS-1"
-                className="px-6 py-3 bg-[#0a0a0a] text-white rounded-full border border-[#ff6b35]/30 hover:border-[#ff6b35] transition-all inline-block [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
+                className="px-6 py-3 bg-white dark:bg-[#0a0a0a] text-black dark:text-white rounded-full border border-gray-200 dark:border-[#ff6b35]/30 hover:border-[#ff6b35] transition-all inline-block"
               >
                 Call Us
               </a>

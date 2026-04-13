@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, ImageIcon, Printer, ChevronLeft, Grid3x3, List, Search as SearchIcon, Loader2, CheckCircle, ChevronRight, Home } from 'lucide-react';
+import { X, ImageIcon, Printer, ChevronLeft, Grid3x3, List, Search as SearchIcon, Loader2, CheckCircle, ChevronRight, Home, ZoomIn } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
 import { ReturnToHomeButton } from './ReturnToHomeButton';
+import { motion, AnimatePresence } from 'motion/react';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface CollectionPageProps {
   collection: {
@@ -44,32 +46,30 @@ export function CollectionPage({ collection, onClose, onBack, onCreateOrder }: C
 
         if (response.ok) {
           const data = await response.json();
-          console.log('CollectionPage: Received images:', data.photos?.length || 0);
+          console.log('CollectionPage: Server response:', {
+            photosCount: data.photos?.length || 0,
+            firstPhoto: data.photos?.[0] ? {
+              id: data.photos[0].id,
+              name: data.photos[0].name,
+              isMarketplacePhoto: data.photos[0].isMarketplacePhoto,
+              urlPrefix: data.photos[0].url?.substring(0, 80),
+            } : null
+          });
           
-          // No filtering - S3 bucket is now configured for public access
-          // All photos should be accessible
+          // Map photos to ensure proper structure
           const validPhotos = (data.photos || []).map((photo: Photo) => ({
-            ...photo,
-            url: photo.optimizedUrl || photo.url
+            id: photo.id,
+            name: photo.name,
+            url: photo.url, // This is the signed high-res URL for marketplace photos
+            optimizedUrl: photo.url, // Same for printing
           }));
           
-          console.log('CollectionPage: Valid photos after processing:', validPhotos.length);
-          if (validPhotos.length > 0) {
-            console.log('CollectionPage: Sample photo URL:', validPhotos[0].url);
-            
-            // TEST: Try to fetch the first image to check if it's accessible
-            console.log('🧪 Testing S3 image accessibility...');
-            try {
-              const testResponse = await fetch(validPhotos[0].url, { method: 'HEAD', mode: 'no-cors' });
-              console.log('✅ S3 image fetch test completed (no-cors mode)');
-            } catch (testError) {
-              console.error('❌ S3 image fetch test failed:', testError);
-            }
-          }
-          
+          console.log('CollectionPage: Mapped photos:', validPhotos.length);
           setImages(validPhotos);
         } else {
-          console.error('CollectionPage: Failed to fetch images:', response.status);
+          console.error('CollectionPage: Failed to fetch images:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('CollectionPage: Error response:', errorText.substring(0, 200));
           setImages([]);
         }
       } catch (error) {

@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { CartProvider } from './contexts/CartContext';
-import { DarkModeAudit } from './components/DarkModeAudit';
+// import { DarkModeAudit } from './components/DarkModeAudit';
 import { SEO, SEOConfig } from './components/SEO';
 import { StockPhotosPreview } from './components/StockPhotosPreview';
 import { FloatingCartButton } from './components/FloatingCartButton';
@@ -693,7 +693,6 @@ export default function App() {
             </AnimatePresence>
 
             <SignupPopup />
-            <DarkModeAudit />
             <Toaster />
           </div>
         </CartProvider>

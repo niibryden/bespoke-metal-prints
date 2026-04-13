@@ -3389,4 +3389,110 @@ adminApp.post('/make-server-3e3a9cd7/admin/testimonials/seed', async (c) => {
   }
 });
 
+// Cleanup broken marketplace photos from collections
+adminApp.post('/make-server-3e3a9cd7/admin/cleanup-broken-photos', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const collections = await kv.get('stock:collections') || [];
+    let totalRemoved = 0;
+    const brokenPhotos: any[] = [];
+
+    console.log('🔍 Checking collections for broken marketplace photos...');
+
+    // Import AWS SDK for checking S3 files
+    const { S3Client, HeadObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
+    
+    const AWS_ACCESS_KEY_ID = Deno.env.get('AWS_ACCESS_KEY_ID');
+    const AWS_SECRET_ACCESS_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+    const AWS_REGION = Deno.env.get('AWS_REGION') || 'us-east-1';
+    const AWS_S3_BUCKET_NAME = Deno.env.get('AWS_S3_BUCKET_NAME');
+
+    if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_S3_BUCKET_NAME) {
+      return c.json({ error: 'AWS credentials not configured' }, 500);
+    }
+
+    const s3Client = new S3Client({
+      region: AWS_REGION,
+      credentials: {
+        accessKeyId: AWS_ACCESS_KEY_ID,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+      },
+    });
+
+    // Process each collection
+    for (const collection of collections) {
+      const originalCount = collection.images?.length || 0;
+      
+      // Check each image
+      const validImages = [];
+      for (const img of collection.images || []) {
+        // Only check marketplace photos
+        if (img.isMarketplacePhoto || img.url.includes('marketplace')) {
+          try {
+            // Extract the S3 key from the URL
+            const urlMatch = img.url.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/);
+            if (urlMatch) {
+              const key = decodeURIComponent(urlMatch[3]);
+              
+              // Check if file exists in S3
+              const headCommand = new HeadObjectCommand({
+                Bucket: AWS_S3_BUCKET_NAME,
+                Key: key,
+              });
+              
+              await s3Client.send(headCommand);
+              // File exists, keep it
+              validImages.push(img);
+              console.log(`✅ Valid: ${key}`);
+            } else {
+              validImages.push(img); // Keep if URL format is unexpected
+            }
+          } catch (error: any) {
+            if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+              console.log(`❌ Broken photo found: ${img.url}`);
+              brokenPhotos.push({
+                collection: collection.name,
+                url: img.url,
+                name: img.name || img.title,
+              });
+              totalRemoved++;
+              // Don't add to validImages - this removes it
+            } else {
+              // Other errors (permissions, etc) - keep the image
+              console.warn(`⚠️ Error checking ${img.url}:`, error.message);
+              validImages.push(img);
+            }
+          }
+        } else {
+          // Not a marketplace photo, keep it
+          validImages.push(img);
+        }
+      }
+
+      // Update collection with only valid images
+      collection.images = validImages;
+      console.log(`📁 ${collection.name}: ${originalCount} → ${validImages.length} images`);
+    }
+
+    // Save updated collections
+    await kv.set('stock:collections', collections);
+
+    console.log(`✅ Cleanup complete: Removed ${totalRemoved} broken photos`);
+
+    return c.json({
+      success: true,
+      totalRemoved,
+      brokenPhotos,
+      message: `Successfully removed ${totalRemoved} broken marketplace photo(s) from collections`,
+    });
+  } catch (error: any) {
+    console.error('Failed to cleanup broken photos:', error);
+    return c.json({ error: 'Failed to cleanup broken photos: ' + error.message }, 500);
+  }
+});
+
 export default adminApp;

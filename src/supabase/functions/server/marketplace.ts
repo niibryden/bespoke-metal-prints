@@ -256,6 +256,7 @@ async function addMarketplacePhotoToStockCollections(photo: any) {
     const stockImage = {
       id: photo.id,
       url: photo.webUrl || photo.s3Url, // Use web URL for display
+      originalUrl: photo.s3Url, // Store original URL for high-res printing
       title: photo.title,
       description: photo.description || '',
       tags: photo.tags || [],

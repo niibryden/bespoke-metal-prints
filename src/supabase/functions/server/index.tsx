@@ -30,7 +30,7 @@ async function generateSignedUrl(s3Url: string): Promise<string> {
     // Import AWS SDK for signed URLs
     const { S3Client } = await import('npm:@aws-sdk/client-s3@3');
     const { getSignedUrl } = await import('npm:@aws-sdk/s3-request-presigner@3');
-    const { GetObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
+    const { GetObjectCommand, HeadObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
     
     const s3Client = new S3Client({
       region: region,
@@ -40,6 +40,23 @@ async function generateSignedUrl(s3Url: string): Promise<string> {
       },
     });
     
+    // CRITICAL: Verify file exists before generating signed URL
+    // This prevents 404 errors when trying to use the signed URL
+    try {
+      const headCommand = new HeadObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      });
+      await s3Client.send(headCommand);
+    } catch (headError: any) {
+      if (headError.name === 'NotFound' || headError.$metadata?.httpStatusCode === 404) {
+        console.warn(`⚠️ S3 file does not exist: ${key.substring(0, 80)}`);
+        throw new Error('File not found in S3');
+      }
+      // For other errors (permissions, etc.), log but continue to try generating URL
+      console.warn('Warning checking S3 file existence:', headError.message);
+    }
+    
     const command = new GetObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -48,9 +65,12 @@ async function generateSignedUrl(s3Url: string): Promise<string> {
     // Generate signed URL valid for 1 hour
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     return signedUrl;
-  } catch (error) {
-    console.error('Failed to generate signed URL:', error);
-    return s3Url; // Return original URL as fallback
+  } catch (error: any) {
+    // Only log detailed error for non-404 cases
+    if (!error.message?.includes('File not found')) {
+      console.error('Failed to generate signed URL:', error);
+    }
+    throw error; // Re-throw so caller can handle
   }
 }
 
@@ -99,13 +119,18 @@ app.get("/make-server-3e3a9cd7/collections", async (c) => {
     
     // Transform collections to public format with only web-optimized images
     const publicCollections = await Promise.all(collections.map(async (col: any, index: number) => {
-      // Filter to only include web-optimized images (faster loading)
-      const webImages = (col.images || []).filter((img: any) => 
-        img.url.includes('-web.') || !img.url.includes('-original.')
-      );
+      // Filter to include web-optimized images (faster loading)
+      // Admin photos: filename contains '-web.' (not '-original.')
+      // Marketplace photos: path contains '/web/' (not '/original/')
+      const webImages = (col.images || []).filter((img: any) => {
+        const url = img.url || '';
+        return url.includes('-web.') || url.includes('/web/') || 
+               (!url.includes('-original.') && !url.includes('/original/'));
+      });
       
       // Generate signed URLs for marketplace photos or images in private paths
-      const photosWithUrls = await Promise.all(webImages.map(async (img: any) => {
+      const photosWithUrls = [];
+      for (const img of webImages) {
         let imageUrl = img.url;
         
         // If it's a marketplace photo or in a private path (contains '/original/'), use signed URL
@@ -114,16 +139,17 @@ app.get("/make-server-3e3a9cd7/collections", async (c) => {
             imageUrl = await generateSignedUrl(img.url);
           } catch (err) {
             console.warn('Failed to generate signed URL for:', img.url.substring(0, 50), err);
-            // Keep original URL as fallback
+            // Skip this image if we can't generate a signed URL (likely doesn't exist)
+            continue;
           }
         }
         
-        return {
+        photosWithUrls.push({
           id: img.id,
           url: imageUrl,
           name: img.name || img.title
-        };
-      }));
+        });
+      }
       
       return {
         id: col.id || `col_${index}`, // Generate ID if missing
@@ -145,33 +171,64 @@ app.get("/make-server-3e3a9cd7/collections", async (c) => {
 app.get("/make-server-3e3a9cd7/stock-photos/:collectionName", async (c) => {
   try {
     const collectionName = c.req.param('collectionName');
+    console.log(`📸 Fetching photos for collection: "${collectionName}"`);
     const collections = await kv.get('stock:collections') || [];
     
     // Find the requested collection
     const collection = collections.find((col: any) => col.name === collectionName);
     
     if (!collection) {
+      console.log(`❌ Collection not found: "${collectionName}"`);
       return c.json({ error: 'Collection not found' }, 404);
     }
     
-    // Filter to only include web-optimized images (faster loading)
-    const webImages = (collection.images || []).filter((img: any) => 
-      img.url.includes('-web.') || !img.url.includes('-original.')
-    );
+    console.log(`✅ Found collection with ${collection.images?.length || 0} images`);
     
-    // Transform photos to the format expected by CollectionDetailView with direct S3 URLs
-    const photos = webImages.map((img: any) => {
-      return {
+    // Transform photos with signed URLs for marketplace photos
+    const photos = [];
+    
+    for (const img of (collection.images || [])) {
+      console.log(`\n🔍 Processing image: ${img.id}`);
+      console.log(`   - isMarketplacePhoto: ${img.isMarketplacePhoto}`);
+      console.log(`   - url: ${img.url?.substring(0, 80)}...`);
+      console.log(`   - originalUrl: ${img.originalUrl?.substring(0, 80)}...`);
+      
+      // For marketplace photos, ALWAYS use originalUrl (high-res for printing)
+      let imageUrl;
+      
+      if (img.isMarketplacePhoto) {
+        // Marketplace photo - use originalUrl for high-res printing
+        const highResUrl = img.originalUrl || img.s3Url || img.url;
+        console.log(`   ✅ Marketplace photo - using high-res URL: ${highResUrl.substring(0, 80)}...`);
+        
+        try {
+          imageUrl = await generateSignedUrl(highResUrl);
+          console.log(`   ✅ Generated signed URL: ${imageUrl.substring(0, 80)}...`);
+        } catch (err) {
+          console.error(`   ❌ Failed to generate signed URL:`, err);
+          // Skip this photo if we can't generate a signed URL
+          continue;
+        }
+      } else {
+        // Admin photo - use URL as-is (already public or web-optimized)
+        imageUrl = img.url;
+        console.log(`   ✅ Admin photo - using URL: ${imageUrl.substring(0, 80)}...`);
+      }
+      
+      photos.push({
         id: img.id,
-        title: img.name,
-        url: img.url, // Direct S3 URL
-        optimizedUrl: img.url // Use the same URL since it's already optimized
-      };
-    });
+        name: img.name || img.title,
+        title: img.name || img.title,
+        url: imageUrl,
+        optimizedUrl: imageUrl,
+        isMarketplacePhoto: img.isMarketplacePhoto, // Pass through for debugging
+      });
+    }
     
+    console.log(`\n✅ Returning ${photos.length} photos for collection "${collectionName}"`);
     return c.json({ photos });
   } catch (error: any) {
-    console.error('Failed to fetch photos for collection:', error);
+    console.error('❌ Failed to fetch photos for collection:', error);
     return c.json({ error: 'Failed to fetch photos' }, 500);
   }
 });
@@ -321,7 +378,16 @@ app.get("/make-server-3e3a9cd7/proxy-image", async (c) => {
           'Access-Control-Allow-Headers': '*',
         },
       });
-    } catch (error) {
+    } catch (error: any) {
+      // If file not found, return 404
+      if (error.message?.includes('File not found')) {
+        return new Response(null, {
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
       return new Response(null, {
         status: 500,
         headers: {
@@ -343,8 +409,22 @@ app.get("/make-server-3e3a9cd7/proxy-image", async (c) => {
     console.log('🖼️ Fetching S3 image via proxy:', s3Url.substring(0, 80) + '...');
     
     // Generate signed URL if it's a direct S3 URL
-    const signedUrl = await generateSignedUrl(s3Url);
-    console.log('🔑 Generated signed URL (first 100 chars):', signedUrl.substring(0, 100) + '...');
+    let signedUrl;
+    try {
+      signedUrl = await generateSignedUrl(s3Url);
+      console.log('🔑 Generated signed URL (first 100 chars):', signedUrl.substring(0, 100) + '...');
+    } catch (error: any) {
+      // If file not found in S3, return 404 with CORS headers
+      if (error.message?.includes('File not found')) {
+        console.warn('⚠️ File not found in S3, returning 404:', s3Url.substring(0, 80));
+        return c.json({ 
+          error: 'Image not found in storage',
+          url: s3Url.substring(0, 100) 
+        }, 404);
+      }
+      // For other errors, re-throw
+      throw error;
+    }
     
     // Fetch the image from S3
     console.log('📥 Fetching image from S3...');

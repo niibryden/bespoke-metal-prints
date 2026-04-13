@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Truck, MapPin, Clock, Globe, DollarSign, Package } from 'lucide-react';
+import { ArrowLeft, Truck, Package, MapPin, Clock, DollarSign, AlertCircle, ShieldCheck } from 'lucide-react';
 import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface ShippingPolicyPageProps {
@@ -20,12 +20,10 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
   }, []);
 
   return (
-    <div className={`min-h-screen bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 [data-theme='light']_&:bg-white transition-all duration-300`}>
+    <div className={`min-h-screen bg-white dark:bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 transition-all duration-300`}>
       <div className="container mx-auto px-4 max-w-4xl">
-        {/* Return to Home Button */}
-        <div className="mb-8">
-          <ReturnToHomeButton onClick={onBack} />
-        </div>
+        {/* Back Button */}
+        <ReturnToHomeButton onClick={onBack} className="mb-8" />
 
         {/* Header */}
         <motion.div
@@ -35,12 +33,12 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
         >
           <div className="flex items-center justify-center gap-3 mb-4">
             <Truck className="w-8 h-8 text-[#ff6b35]" />
-            <h1 className="text-4xl md:text-5xl text-white [data-theme='light']_&:text-black">
+            <h1 className="text-4xl md:text-5xl text-black dark:text-white">
               Shipping Policy
             </h1>
           </div>
-          <p className="text-gray-400 text-lg [data-theme='light']_&:text-gray-600">
-            Last updated: November 10, 2025
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            Last updated: February 5, 2026
           </p>
         </motion.div>
 
@@ -52,45 +50,55 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
           transition={{ delay: 0.1 }}
         >
           {/* Overview */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <Package className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Overview</h2>
-                <p className="text-gray-300 leading-relaxed [data-theme='light']_&:text-gray-700">
-                  We ship our premium metal prints worldwide with care and precision. Each print is carefully packaged to ensure 
-                  it arrives in perfect condition. All orders include tracking and insurance for your peace of mind.
+                <h2 className="text-2xl text-black dark:text-white mb-4">Shipping Overview</h2>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  At Bespoke Metal Prints, we carefully package and ship your custom metal prints to ensure they arrive in 
+                  perfect condition. We partner with trusted carriers (USPS, UPS, FedEx) to deliver your order safely and 
+                  efficiently. All orders are shipped from our production facility in Georgia, USA.
                 </p>
               </div>
             </div>
           </section>
 
           {/* Processing Time */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <Clock className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Processing & Production Time</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
-                  <p className="leading-relaxed">
-                    Each metal print is custom-made to order. Our typical production timeline is:
-                  </p>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                      <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Standard Orders</h3>
-                      <p className="text-[#ff6b35] text-2xl mb-1">3-5 business days</p>
-                      <p className="text-sm">Production time before shipping</p>
-                    </div>
-                    <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                      <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Rush Orders</h3>
-                      <p className="text-[#ff6b35] text-2xl mb-1">1-2 business days</p>
-                      <p className="text-sm">Available for additional fee</p>
+                <h2 className="text-2xl text-black dark:text-white mb-4">Production & Processing Time</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Standard Production</h3>
+                    <p className="leading-relaxed">
+                      Standard production time is <strong className="text-[#ff6b35]">5-7 business days</strong>. This is the time 
+                      needed to create your custom metal print from the moment your order is placed. Production time does not include 
+                      shipping transit time.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Rush Order Upgrade</h3>
+                    <p className="leading-relaxed mb-2">
+                      Need your print faster? We offer rush production for <strong className="text-[#ff6b35]">2-3 business days</strong> 
+                      for an additional fee. Rush orders are given priority in our production queue.
+                    </p>
+                    <div className="bg-[#ff6b35]/10 border border-[#ff6b35]/30 rounded-lg p-4 mt-3">
+                      <p className="text-sm">
+                        <strong className="text-[#ff6b35]">Note:</strong> Rush production is available during checkout. Select the 
+                        rush option before completing your order.
+                      </p>
                     </div>
                   </div>
-                  <div className="bg-[#ff6b35]/10 border border-[#ff6b35]/30 rounded-lg p-4">
-                    <p className="text-sm">
-                      <strong className="text-[#ff6b35]">Note:</strong> Production time does not include shipping time. 
-                      Business days exclude weekends and holidays. You'll receive a tracking number once your order ships.
+
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">When Production Begins</h3>
+                    <p className="leading-relaxed">
+                      Most orders enter production within <strong className="text-[#ff6b35]">24 hours</strong> of order placement. 
+                      You will receive an email notification when production begins and another when your order ships with tracking information.
                     </p>
                   </div>
                 </div>
@@ -98,51 +106,59 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
             </div>
           </section>
 
-          {/* Shipping Methods */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          {/* Shipping Options */}
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
               <Truck className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Shipping Methods (US Domestic)</h2>
+                <h2 className="text-2xl text-black dark:text-white mb-4">Shipping Options & Transit Times</h2>
                 <div className="space-y-4">
-                  <div className="bg-[#0a0a0a] p-6 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg text-white [data-theme='light']_&:text-black">Standard Shipping</h3>
-                      <span className="text-[#ff6b35]">$14.99+</span>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="bg-white dark:bg-[#0a0a0a] p-5 rounded-lg border border-gray-200 dark:border-[#ff6b35]/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Package className="w-5 h-5 text-[#ff6b35]" />
+                        <h3 className="text-lg text-black dark:text-white">Standard</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                        <strong className="text-black dark:text-white">5-7 business days</strong>
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Most economical option. Transit time may vary by location.
+                      </p>
                     </div>
-                    <p className="text-gray-300 text-sm mb-2 [data-theme='light']_&:text-gray-700">5-7 business days delivery</p>
-                    <p className="text-gray-400 text-sm [data-theme='light']_&:text-gray-600">
-                      Most economical option. Tracking included. Price varies by size and weight.
-                    </p>
+
+                    <div className="bg-white dark:bg-[#0a0a0a] p-5 rounded-lg border border-gray-200 dark:border-[#ff6b35]/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Truck className="w-5 h-5 text-[#ff6b35]" />
+                        <h3 className="text-lg text-black dark:text-white">Expedited</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                        <strong className="text-black dark:text-white">2-3 business days</strong>
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Faster delivery for time-sensitive orders.
+                      </p>
+                    </div>
+
+                    <div className="bg-white dark:bg-[#0a0a0a] p-5 rounded-lg border border-gray-200 dark:border-[#ff6b35]/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShieldCheck className="w-5 h-5 text-[#ff6b35]" />
+                        <h3 className="text-lg text-black dark:text-white">Express</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                        <strong className="text-black dark:text-white">1-2 business days</strong>
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Fastest delivery option available.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="bg-[#0a0a0a] p-6 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg text-white [data-theme='light']_&:text-black">Express Shipping</h3>
-                      <span className="text-[#ff6b35]">$29.99+</span>
-                    </div>
-                    <p className="text-gray-300 text-sm mb-2 [data-theme='light']_&:text-gray-700">2-3 business days delivery</p>
-                    <p className="text-gray-400 text-sm [data-theme='light']_&:text-gray-600">
-                      Faster delivery with priority handling. Tracking and signature confirmation included.
-                    </p>
-                  </div>
-
-                  <div className="bg-[#0a0a0a] p-6 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg text-white [data-theme='light']_&:text-black">Overnight Shipping</h3>
-                      <span className="text-[#ff6b35]">$59.99+</span>
-                    </div>
-                    <p className="text-gray-300 text-sm mb-2 [data-theme='light']_&:text-gray-700">Next business day delivery</p>
-                    <p className="text-gray-400 text-sm [data-theme='light']_&:text-gray-600">
-                      Fastest option available. Requires rush production. Orders must be placed before 12pm EST.
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-[#ff6b35]/10 to-[#ff8c42]/10 p-6 rounded-lg border border-[#ff6b35]/30">
-                    <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Free Shipping</h3>
-                    <p className="text-gray-300 text-sm [data-theme='light']_&:text-gray-700">
-                      <strong className="text-[#ff6b35]">Enjoy free standard shipping on orders over $150!</strong> Automatically 
-                      applied at checkout. Cannot be combined with other shipping promotions.
+                  <div className="bg-[#ff6b35]/10 border border-[#ff6b35]/30 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <strong className="text-[#ff6b35]">Important:</strong> Transit times are estimates and begin after production 
+                      is complete. Actual delivery may vary based on carrier performance and destination. Remote or rural areas may 
+                      experience longer delivery times.
                     </p>
                   </div>
                 </div>
@@ -150,61 +166,88 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
             </div>
           </section>
 
-          {/* International Shipping */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
+          {/* Shipping Costs */}
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
             <div className="flex items-start gap-4">
-              <Globe className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
+              <DollarSign className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">International Shipping</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+                <h2 className="text-2xl text-black dark:text-white mb-4">Shipping Costs</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                   <p className="leading-relaxed">
-                    We ship to most countries worldwide. International shipping rates are calculated at checkout based on 
-                    destination, size, and weight.
+                    Shipping costs are calculated in real-time based on your order size, weight, destination, and selected 
+                    shipping speed. You will see the exact shipping cost before completing checkout.
                   </p>
-                  
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                      <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Canada</h3>
-                      <p className="text-sm mb-2">7-12 business days</p>
-                      <p className="text-[#ff6b35]">From $29.99</p>
-                    </div>
-                    <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                      <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Europe</h3>
-                      <p className="text-sm mb-2">10-15 business days</p>
-                      <p className="text-[#ff6b35]">From $49.99</p>
-                    </div>
-                    <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                      <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Australia/NZ</h3>
-                      <p className="text-sm mb-2">12-18 business days</p>
-                      <p className="text-[#ff6b35]">From $59.99</p>
-                    </div>
-                    <div className="bg-[#0a0a0a] p-4 rounded-lg border border-[#ff6b35]/10 [data-theme='light']_&:bg-white">
-                      <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Rest of World</h3>
-                      <p className="text-sm mb-2">15-25 business days</p>
-                      <p className="text-[#ff6b35]">From $69.99</p>
+
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Factors Affecting Shipping Cost</h3>
+                    <ul className="space-y-2 ml-4">
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span><strong className="text-black dark:text-white">Size & Weight:</strong> Larger prints cost more to ship</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span><strong className="text-black dark:text-white">Destination:</strong> Distance from Georgia affects cost</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span><strong className="text-black dark:text-white">Speed:</strong> Faster shipping options cost more</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span><strong className="text-black dark:text-white">Special Options:</strong> Signature required or insurance adds cost</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Free Shipping</h3>
+                    <p className="leading-relaxed">
+                      We occasionally offer free shipping promotions. Follow us on social media or sign up for our newsletter 
+                      to be notified of special offers and discounts.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Shipping Locations */}
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <div className="flex items-start gap-4">
+              <MapPin className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
+              <div>
+                <h2 className="text-2xl text-black dark:text-white mb-4">Shipping Locations</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Domestic Shipping (USA)</h3>
+                    <p className="leading-relaxed">
+                      We ship to all 50 states, including Alaska and Hawaii. Please note that Alaska, Hawaii, and US territories 
+                      may have longer transit times and higher shipping costs.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">International Shipping</h3>
+                    <p className="leading-relaxed mb-2">
+                      We currently ship to select international destinations. International shipping costs and transit times vary 
+                      significantly by country. Additional customs fees, duties, or taxes may apply and are the responsibility of 
+                      the recipient.
+                    </p>
+                    <div className="bg-[#ff6b35]/10 border border-[#ff6b35]/30 rounded-lg p-4 mt-3">
+                      <p className="text-sm">
+                        <strong className="text-[#ff6b35]">Customs & Duties:</strong> International customers are responsible for 
+                        all customs fees, import duties, and taxes charged by their country. We have no control over these charges.
+                      </p>
                     </div>
                   </div>
 
-                  <div className="bg-[#ff6b35]/10 border border-[#ff6b35]/30 rounded-lg p-4">
-                    <h3 className="text-white mb-2 [data-theme='light']_&:text-black">Important International Information:</h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#ff6b35]">•</span>
-                        <span>Customers are responsible for all customs duties, taxes, and import fees</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#ff6b35]">•</span>
-                        <span>Delivery times may vary due to customs processing</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#ff6b35]">•</span>
-                        <span>All international shipments include tracking and insurance</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#ff6b35]">•</span>
-                        <span>We declare accurate values on all customs forms</span>
-                      </li>
-                    </ul>
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">PO Boxes & APO/FPO Addresses</h3>
+                    <p className="leading-relaxed">
+                      We ship to PO Boxes and military APO/FPO addresses via USPS. Please allow additional transit time for 
+                      military addresses.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -212,115 +255,137 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
           </section>
 
           {/* Tracking */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <div className="flex items-start gap-4">
-              <MapPin className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
-              <div>
-                <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Order Tracking</h2>
-                <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
-                  <p className="leading-relaxed">
-                    Once your order ships, you'll receive a tracking number via email. You can track your order:
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Order Tracking</h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300">
+              <p className="leading-relaxed">
+                Once your order ships, you will receive an email with tracking information. You can use this tracking number to 
+                monitor your shipment's progress.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 bg-white dark:bg-[#0a0a0a] p-4 rounded-lg border border-gray-200 dark:border-[#ff6b35]/10">
+                  <h3 className="text-lg text-black dark:text-white mb-2">Track Your Order</h3>
+                  <p className="text-sm mb-4">
+                    Enter your order number or tracking number to see the current status of your shipment.
                   </p>
-                  <ul className="space-y-3">
-                    <li className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span>Using the tracking link in your shipping confirmation email</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span>In your account dashboard under "Order History"</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span>On our website using the "Track Order" page</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                      <span>Directly on the carrier's website</span>
-                    </li>
-                  </ul>
+                  {onTrackingClick && (
+                    <button
+                      onClick={onTrackingClick}
+                      className="px-6 py-2 bg-[#ff6b35] text-white rounded-full hover:bg-[#ff8c42] transition-all"
+                    >
+                      Track Order
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           </section>
 
           {/* Packaging */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Packaging & Protection</h2>
-            <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <h2 className="text-2xl text-black dark:text-white mb-4">Packaging & Protection</h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300">
               <p className="leading-relaxed">
-                We take great care in packaging your metal print to ensure safe delivery:
+                Your metal prints are valuable, and we take great care in packaging them for safe delivery:
               </p>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
+              <ul className="space-y-2 ml-4">
+                <li className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                  <span>Protected with foam corners and edge protectors</span>
-                </div>
-                <div className="flex items-start gap-3">
+                  <span>Protective corner guards and edge protection</span>
+                </li>
+                <li className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                  <span>Wrapped in protective plastic sleeves</span>
-                </div>
-                <div className="flex items-start gap-3">
+                  <span>Foam padding and cushioning materials</span>
+                </li>
+                <li className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                  <span>Boxed in sturdy corrugated cardboard</span>
-                </div>
-                <div className="flex items-start gap-3">
+                  <span>Sturdy corrugated cardboard boxes</span>
+                </li>
+                <li className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
-                  <span>All orders fully insured during transit</span>
-                </div>
-              </div>
+                  <span>Weatherproof outer wrapping</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                  <span>Clear "Fragile" and "Handle with Care" labels</span>
+                </li>
+              </ul>
             </div>
           </section>
 
-          {/* Shipping Issues */}
-          <section className="bg-[#1a1a1a] rounded-2xl p-8 border border-[#ff6b35]/20 [data-theme='light']_&:bg-gray-50 [data-theme='light']_&:border-gray-200">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Shipping Issues</h2>
-            <div className="space-y-4 text-gray-300 [data-theme='light']_&:text-gray-700">
+          {/* Delivery Issues */}
+          <section className="bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-[#ff6b35]/20">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-[#ff6b35] flex-shrink-0 mt-1" />
               <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Delayed Shipments</h3>
-                <p className="leading-relaxed">
-                  While rare, shipments can occasionally be delayed due to weather, carrier issues, or customs. If your order 
-                  hasn't arrived within the expected timeframe, please contact us and we'll investigate with the carrier.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Lost or Stolen Packages</h3>
-                <p className="leading-relaxed">
-                  All shipments are insured. If tracking shows your package was delivered but you didn't receive it, please 
-                  contact us within 48 hours. We'll file a claim with the carrier and send a replacement.
-                </p>
-              </div>
+                <h2 className="text-2xl text-black dark:text-white mb-4">Delivery Issues</h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Lost or Stolen Packages</h3>
+                    <p className="leading-relaxed">
+                      If tracking shows your package was delivered but you did not receive it, please check with neighbors, your 
+                      building manager, or household members. If the package cannot be located, contact us within 7 days and we 
+                      will work with the carrier to file a claim.
+                    </p>
+                  </div>
 
-              <div>
-                <h3 className="text-lg text-white mb-2 [data-theme='light']_&:text-black">Damaged in Transit</h3>
-                <p className="leading-relaxed">
-                  If your print arrives damaged, please take photos of the damage and packaging, then contact us within 7 days. 
-                  We'll arrange a replacement at no cost to you.
-                </p>
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Damaged in Transit</h3>
+                    <p className="leading-relaxed mb-2">
+                      If your metal print arrives damaged, please:
+                    </p>
+                    <ul className="space-y-2 ml-4">
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span>Take photos of the damaged packaging and product</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span>Keep all packaging materials</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span>Contact us within 7 days with photos and order details</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#ff6b35] rounded-full mt-2 flex-shrink-0"></div>
+                        <span>We will arrange a replacement or refund at no cost to you</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg text-black dark:text-white mb-2">Address Errors</h3>
+                    <p className="leading-relaxed">
+                      Please ensure your shipping address is correct and complete before placing your order. We cannot be 
+                      responsible for orders shipped to incorrect addresses provided by the customer. If you need to update 
+                      your address, contact us immediately - we can only make changes before the order ships.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
           {/* Contact */}
           <section className="bg-gradient-to-r from-[#ff6b35]/10 to-[#ff8c42]/10 rounded-2xl p-8 border border-[#ff6b35]/30 text-center">
-            <h2 className="text-2xl text-white mb-4 [data-theme='light']_&:text-black">Shipping Questions?</h2>
-            <p className="text-gray-300 mb-6 [data-theme='light']_&:text-gray-700">
-              Need help with shipping or tracking? Our support team is here to help.
+            <h2 className="text-2xl text-black dark:text-white mb-4">Questions About Shipping?</h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              If you have questions about shipping options, tracking, or delivery, we're here to help.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="mailto:shipping@bespokemetalprints.com"
-                className="px-6 py-3 bg-[#ff6b35] text-white rounded-full hover:bg-[#ff8c42] transition-all inline-block"
-              >
-                Email Shipping Support
-              </a>
-              <button
-                onClick={onTrackingClick}
-                className="px-6 py-3 bg-[#0a0a0a] text-white rounded-full border border-[#ff6b35]/30 hover:border-[#ff6b35] transition-all inline-block [data-theme='light']_&:bg-white [data-theme='light']_&:text-black"
-              >
-                Track Your Order
-              </button>
+            <div className="space-y-3 text-gray-700 dark:text-gray-300">
+              <p>
+                <strong className="text-black dark:text-white">Email:</strong>{' '}
+                <a href="mailto:shipping@bespokemetalprints.com" className="text-[#ff6b35] hover:underline">
+                  shipping@bespokemetalprints.com
+                </a>
+              </p>
+              <p>
+                <strong className="text-black dark:text-white">Phone:</strong>{' '}
+                <a href="tel:+18578582288" className="text-[#ff6b35] hover:underline">
+                  (857) 858-2288
+                </a>
+              </p>
             </div>
           </section>
         </motion.div>

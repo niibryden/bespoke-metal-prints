@@ -176,9 +176,16 @@ app.get("/make-server-3e3a9cd7/stock-photos/:collectionName", async (c) => {
 app.get("/make-server-3e3a9cd7/testimonials", async (c) => {
   try {
     console.log('📝 GET /testimonials (public) called');
-    const testimonials = await kv.get('testimonials') || [];
+    // Use the same data source as admin - fetch from prefixed keys
+    const testimonials = await kv.getByPrefix('testimonial:') || [];
     console.log(`✅ Returning ${testimonials.length} testimonials`);
-    return c.json({ testimonials });
+    
+    // Sort by createdAt (newest first)
+    const sortedTestimonials = testimonials.sort((a: any, b: any) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    
+    return c.json({ testimonials: sortedTestimonials });
   } catch (error: any) {
     console.error('❌ Failed to fetch testimonials:', error);
     return c.json({ error: error.message }, 500);

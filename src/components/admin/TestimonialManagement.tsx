@@ -108,6 +108,9 @@ export function TestimonialManagement({ adminInfo }: { adminInfo?: { email: stri
         await fetchTestimonials();
         resetForm();
         alert(`Testimonial ${editingTestimonial ? 'updated' : 'created'} successfully!`);
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('testimonialsUpdated'));
       } else {
         const error = await response.json();
         alert(`Failed to ${editingTestimonial ? 'update' : 'create'} testimonial: ${error.error}`);
@@ -138,6 +141,9 @@ export function TestimonialManagement({ adminInfo }: { adminInfo?: { email: stri
       if (response.ok) {
         await fetchTestimonials();
         alert('Testimonial deleted successfully!');
+        
+        // Notify other components to refresh
+        window.dispatchEvent(new CustomEvent('testimonialsUpdated'));
       } else {
         const error = await response.json();
         alert(`Failed to delete testimonial: ${error.error}`);

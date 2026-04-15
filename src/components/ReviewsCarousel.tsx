@@ -26,6 +26,18 @@ export function ReviewsCarousel() {
   // Fetch testimonials from backend
   useEffect(() => {
     fetchTestimonials();
+    
+    // Listen for testimonial updates from admin panel
+    const handleTestimonialsUpdated = () => {
+      console.log('ReviewsCarousel: Testimonials updated event received, refreshing...');
+      fetchTestimonials();
+    };
+
+    window.addEventListener('testimonialsUpdated', handleTestimonialsUpdated);
+
+    return () => {
+      window.removeEventListener('testimonialsUpdated', handleTestimonialsUpdated);
+    };
   }, []);
 
   const fetchTestimonials = async () => {

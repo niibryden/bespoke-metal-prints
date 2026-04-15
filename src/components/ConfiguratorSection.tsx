@@ -645,6 +645,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         
         // Set image and navigate to step 2 (Customize) immediately for instant feedback
         setConfig(prev => ({ ...prev, image: imageUrl }));
+        setPreviewImage(imageUrl); // Set preview image for proof display
         setCompletedSteps([1]); // Mark step 1 as completed
         setCurrentStep(2);
         console.log('🚀 ConfiguratorSection: Immediately moved to step 2 (Customize) with image');
@@ -739,6 +740,101 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         // Check if URL is already a signed URL (contains AWS signature parameters)
         const isSignedUrl = stockImageUrl.includes('X-Amz-Algorithm') || stockImageUrl.includes('X-Amz-Signature');
         
+        // For public S3 URLs (not signed), try direct loading first for faster performance
+        const isPublicS3Url = stockImageUrl.includes('s3.amazonaws.com') && !isSignedUrl;
+        
+        if (isPublicS3Url) {
+          console.log('🚀 Public S3 URL detected, attempting fast direct load...');
+          
+          try {
+            // Try loading the image directly first (much faster)
+            const img = new Image();
+            img.crossOrigin = 'anonymous'; // Enable CORS for canvas export
+            
+            await new Promise((resolve, reject) => {
+              const loadTimeout = setTimeout(() => {
+                reject(new Error('Direct image load timeout'));
+              }, 5000); // 5 second timeout
+              
+              img.onload = () => {
+                clearTimeout(loadTimeout);
+                console.log('✅ Direct image load successful! Much faster.');
+                resolve(null);
+              };
+              img.onerror = (error) => {
+                clearTimeout(loadTimeout);
+                console.log('⚠️ Direct load failed, will fallback to proxy');
+                reject(error);
+              };
+              img.src = stockImageUrl;
+            });
+            
+            console.log('✅ Stock image verified and ready (direct):', img.width, 'x', img.height);
+            
+            // Detect orientation from loaded image
+            const detectedOrientation = img.width > img.height ? 'landscape' : 'portrait';
+            console.log('🔄 Auto-detected orientation from stock photo:', detectedOrientation);
+            setOrientation(detectedOrientation);
+            setOriginalImageDimensions({ width: img.width, height: img.height });
+            
+            // Detect image quality using current size from configRef
+            const quality = detectImageQuality(img, configRef.current.size);
+            setImageQuality(quality);
+            
+            // Initialize history with default transform
+            const initialTransform = {
+              scale: 1,
+              x: 0,
+              y: 0,
+              rotation: 0,
+              flipX: false,
+              flipY: false,
+            };
+            setImageTransform(initialTransform);
+            setTransformHistory([initialTransform]);
+            setHistoryIndex(0);
+            
+            // Initialize crop box with proper proportions
+            const sizeAspectRatio = getSizeAspectRatioWithOrientation(configRef.current.size, detectedOrientation);
+            const calculatedCropBox = calculateProportionalCropBox(sizeAspectRatio);
+            setCropBoxPercent(calculatedCropBox);
+            
+            // Use the original URL directly - CORS is already enabled
+            setConfig(prev => ({ ...prev, image: stockImageUrl }));
+            setPreviewImage(stockImageUrl); // Set preview image for proof display
+            setCompletedSteps([1]); // Mark step 1 as completed
+            setCurrentStep(2);
+            console.log('🚀 ConfiguratorSection: Moved to step 2 (Customize) with stock image (fast path)');
+            
+            // Scroll to configurator
+            setTimeout(() => {
+              const scrollIntoView = (attempt = 1) => {
+                const element = document.getElementById('configurator');
+                if (element) {
+                  console.log(`📍 ConfiguratorSection: Scrolling to self (attempt ${attempt})`);
+                  const yOffset = -80;
+                  const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                } else if (attempt < 3) {
+                  setTimeout(() => scrollIntoView(attempt + 1), 200);
+                }
+              };
+              scrollIntoView();
+            }, 200);
+            
+            // Notify parent that processing is complete
+            if (onStockImageProcessed) {
+              onStockImageProcessed();
+            }
+            
+            return; // Success! Exit early
+          } catch (directLoadError) {
+            console.log('⚠️ Direct load failed, falling back to proxy method:', directLoadError);
+            // Continue to proxy fallback below
+          }
+        }
+        
+        // Fallback: Use proxy for signed URLs or if direct load failed
         let imageResponse;
         
         if (isSignedUrl) {
@@ -867,6 +963,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         
         // Use blob URL - it's same-origin so no CORS issues for canvas export
         setConfig(prev => ({ ...prev, image: blobUrl }));
+        setPreviewImage(blobUrl); // Set preview image for proof display
         setCompletedSteps([1]); // Mark step 1 as completed
         setCurrentStep(2);
         console.log('🚀 ConfiguratorSection: Moved to step 2 (Customize) with stock image fully initialized');

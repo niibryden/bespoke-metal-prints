@@ -163,14 +163,6 @@ export function Footer({
             >
               Metal Prints vs Canvas
             </button>
-            {onMarketplaceClick && (
-              <button
-                onClick={onMarketplaceClick}
-                className="text-[#ff6b35] hover:text-[#ff8555] transition-colors font-semibold"
-              >
-                Marketplace
-              </button>
-            )}
             {onAdminClick && (
               <button
                 onClick={onAdminClick}

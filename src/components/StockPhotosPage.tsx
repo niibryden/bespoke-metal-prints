@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, ImageIcon, ChevronRight, Search, Grid3x3, Grid2x2, Printer, Loader2, CheckCircle, Camera } from 'lucide-react';
+import { X, ImageIcon, ChevronRight, Search, Grid3x3, Grid2x2, List, Printer, Loader2, CheckCircle, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
@@ -29,7 +29,7 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
   const [error, setError] = useState<string | null>(null);
   const [displayedCount, setDisplayedCount] = useState(8);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'large'>('grid');
+  const [viewMode, setViewMode] = useState<'small' | 'large' | 'list'>('list');
   const [hoveredCollection, setHoveredCollection] = useState<string | null>(null);
   const [loadingImageId, setLoadingImageId] = useState<string | null>(null);
   const [successImageId, setSuccessImageId] = useState<string | null>(null);
@@ -157,10 +157,12 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
   if (selectedCollection) {
     return (
       <motion.div
+        key="collection-detail"
         className="fixed inset-0 z-[9999] bg-white dark:bg-[#0a0a0a] overflow-y-auto"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0, x: '100%' }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: '100%' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md border-b border-gray-200 dark:border-[#ff6b35]/20 shadow-lg">
@@ -409,13 +411,13 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
             {/* View mode toggle */}
             <div className="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#2a2a2a] rounded-lg p-1">
               <button
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode('small')}
                 className={`p-2 rounded transition-all ${
-                  viewMode === 'grid' 
+                  viewMode === 'small' 
                     ? 'bg-[#ff6b35] text-black' 
                     : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
-                title="Grid view"
+                title="Small grid (5 columns)"
               >
                 <Grid3x3 className="w-5 h-5" />
               </button>
@@ -426,9 +428,20 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
                     ? 'bg-[#ff6b35] text-black' 
                     : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
-                title="Large view"
+                title="Large grid (3 columns)"
               >
                 <Grid2x2 className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded transition-all ${
+                  viewMode === 'list' 
+                    ? 'bg-[#ff6b35] text-black' 
+                    : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+                title="List view (2 columns)"
+              >
+                <List className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -564,73 +577,92 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
           </motion.div>
         ) : (
           <>
-            {/* Collections grid */}
-            <div className={`grid gap-6 mb-12 ${
-              viewMode === 'grid' 
-                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' 
-                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-            }`}>
-              <AnimatePresence mode="popLayout">
-                {visibleCollections.map((collection, index) => (
-                  <motion.div
-                    key={collection.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.3, delay: index * 0.03 }}
-                    className="group cursor-pointer"
-                    onClick={() => handleCategoryClick(collection)}
-                    onMouseEnter={() => setHoveredCollection(collection.name)}
-                    onMouseLeave={() => setHoveredCollection(null)}
-                  >
-                    {/* Image */}
-                    <div className={`relative rounded-xl overflow-hidden mb-4 border-2 transition-all duration-300 shadow-lg ${
-                      hoveredCollection === collection.name
-                        ? 'border-[#ff6b35] shadow-[#ff6b35]/20 shadow-2xl -translate-y-1'
-                        : 'border-transparent shadow-black/20'
-                    } ${viewMode === 'large' ? 'aspect-[4/3]' : 'aspect-[4/3]'}`}>
-                      {collection.thumbnail ? (
-                        <>
-                          <ImageWithFallback
-                            src={collection.thumbnail}
-                            alt={collection.name}
-                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                          />
-                          {/* Gradient overlay */}
-                          <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ${
-                            hoveredCollection === collection.name ? 'opacity-100' : 'opacity-60'
-                          }`} />
-                          
-                          {/* Collection info on hover */}
-                          <div className={`absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300 ${
-                            hoveredCollection === collection.name ? 'translate-y-0' : 'translate-y-2'
-                          }`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <ImageIcon className="w-4 h-4 text-[#ff6b35]" />
-                                <span className="text-white text-sm font-medium">
-                                  {collection.photoCount} photo{collection.photoCount !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                              <ChevronRight className={`w-5 h-5 text-[#ff6b35] transition-transform duration-300 ${
-                                hoveredCollection === collection.name ? 'translate-x-1' : ''
+            {/* Collections grid or list */}
+            {viewMode === 'list' ? (
+              /* List View - Single column with thumbnail on left, details on right */
+              <div className="space-y-4 mb-12">
+                <AnimatePresence mode="popLayout">
+                  {visibleCollections.map((collection, index) => (
+                    <motion.div
+                      key={collection.id}
+                      layout
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3, delay: index * 0.02 }}
+                      className="group cursor-pointer"
+                      onClick={() => handleCategoryClick(collection)}
+                      onMouseEnter={() => setHoveredCollection(collection.name)}
+                      onMouseLeave={() => setHoveredCollection(null)}
+                    >
+                      <div className={`flex gap-6 p-4 rounded-xl border-2 transition-all duration-300 bg-white dark:bg-[#1a1a1a] ${
+                        hoveredCollection === collection.name
+                          ? 'border-[#ff6b35] shadow-lg shadow-[#ff6b35]/20'
+                          : 'border-gray-200 dark:border-[#2a2a2a] shadow-md'
+                      }`}>
+                        {/* Thumbnail - Left side */}
+                        <div className="relative w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                          {collection.thumbnail ? (
+                            <>
+                              <ImageWithFallback
+                                src={collection.thumbnail}
+                                alt={collection.name}
+                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                              />
+                              <div className={`absolute inset-0 bg-gradient-to-t from-black/60 to-transparent transition-opacity duration-300 ${
+                                hoveredCollection === collection.name ? 'opacity-100' : 'opacity-40'
                               }`} />
+                            </>
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 dark:bg-[#0a0a0a] flex flex-col items-center justify-center gap-2">
+                              <ImageIcon className="w-12 h-12 text-gray-400" />
+                              <p className="text-xs text-gray-500">No photos</p>
                             </div>
+                          )}
+                        </div>
+
+                        {/* Details - Right side */}
+                        <div className="flex-1 flex flex-col justify-between py-2">
+                          <div>
+                            <h3 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${
+                              hoveredCollection === collection.name
+                                ? 'text-[#ff6b35]'
+                                : 'text-gray-900 dark:text-white'
+                            }`}>
+                              {collection.name}
+                            </h3>
                             
-                            {/* Quick Print Button */}
+                            {collection.description && (
+                              <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                                {collection.description}
+                              </p>
+                            )}
+
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                              <ImageIcon className="w-4 h-4 text-[#ff6b35]" />
+                              <span>
+                                <strong className="text-gray-900 dark:text-white">{collection.photoCount}</strong> photo{collection.photoCount !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-3 mt-4">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCategoryClick(collection);
+                              }}
+                              className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#3a3a3a] text-gray-900 dark:text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                            >
+                              <ImageIcon className="w-4 h-4" />
+                              Browse Collection
+                            </button>
+                            
                             {collection.thumbnail && (
-                              <motion.button
+                              <button
                                 onClick={(e) => handleQuickPrint(collection, e)}
-                                className="w-full mt-2 px-4 py-2 bg-[#ff6b35] hover:bg-[#ff8555] text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-lg"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ 
-                                  opacity: hoveredCollection === collection.name ? 1 : 0,
-                                  y: hoveredCollection === collection.name ? 0 : 10
-                                }}
-                                transition={{ duration: 0.2 }}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                className="flex-1 px-4 py-2.5 bg-[#ff6b35] hover:bg-[#ff8555] text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-lg"
                               >
                                 {loadingImageId === collection.name ? (
                                   <>
@@ -648,59 +680,131 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
                                     Quick Print
                                   </>
                                 )}
-                              </motion.button>
+                              </button>
                             )}
                           </div>
-                        </>
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 dark:bg-[#1a1a1a] flex flex-col items-center justify-center gap-2">
-                          <ImageIcon className="w-12 h-12 text-gray-600" />
-                          <p className="text-sm text-gray-500">No photos yet</p>
                         </div>
-                      )}
-                    </div>
-                    
-                    {/* Title and description */}
-                    <div>
-                      <h3 className={`text-lg sm:text-xl mb-1 transition-colors duration-300 ${
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            ) : (
+              /* Grid Views - Small (5 col) or Large (3 col) */
+              <div className={`grid gap-6 mb-12 ${
+                viewMode === 'small'
+                  ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
+                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+              }`}>
+                <AnimatePresence mode="popLayout">
+                  {visibleCollections.map((collection, index) => (
+                    <motion.div
+                      key={collection.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
+                      className="group cursor-pointer"
+                      onClick={() => handleCategoryClick(collection)}
+                      onMouseEnter={() => setHoveredCollection(collection.name)}
+                      onMouseLeave={() => setHoveredCollection(null)}
+                    >
+                      {/* Image */}
+                      <div className={`relative rounded-xl overflow-hidden mb-4 border-2 transition-all duration-300 shadow-lg ${
                         hoveredCollection === collection.name
-                          ? 'text-[#ff6b35]'
-                          : 'text-gray-900 dark:text-white'
-                      }`}>
-                        {collection.name}
-                      </h3>
-                      {collection.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {collection.description}
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-
-            {/* Load more button */}
-            {hasMore && (
-              <motion.div
-                className="text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <button
-                  onClick={handleLoadMore}
-                  className="group px-8 py-3 bg-white dark:bg-[#1a1a1a] text-gray-700 dark:text-white border-2 border-gray-300 dark:border-[#2a2a2a] rounded-lg hover:border-[#ff6b35] hover:bg-[#ff6b35] hover:text-black transition-all font-medium shadow-lg hover:shadow-[#ff6b35]/20 hover:shadow-xl"
-                >
-                  <span className="flex items-center gap-2">
-                    Load More Collections
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </button>
-                <p className="text-sm text-gray-500 mt-3">
-                  Showing {visibleCollections.length} of {filteredCollections.length}
-                </p>
-              </motion.div>
+                          ? 'border-[#ff6b35] shadow-[#ff6b35]/20 shadow-2xl -translate-y-1'
+                          : 'border-transparent shadow-black/20'
+                      } aspect-[4/3]`}>
+                        {collection.thumbnail ? (
+                          <>
+                            <ImageWithFallback
+                              src={collection.thumbnail}
+                              alt={collection.name}
+                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                            />
+                            {/* Gradient overlay */}
+                            <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ${
+                              hoveredCollection === collection.name ? 'opacity-100' : 'opacity-60'
+                            }`} />
+                            
+                            {/* Collection info on hover */}
+                            <div className={`absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300 ${
+                              hoveredCollection === collection.name ? 'translate-y-0' : 'translate-y-2'
+                            }`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <ImageIcon className="w-4 h-4 text-[#ff6b35]" />
+                                  <span className="text-white text-sm font-medium">
+                                    {collection.photoCount} photo{collection.photoCount !== 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                                <ChevronRight className={`w-5 h-5 text-[#ff6b35] transition-transform duration-300 ${
+                                  hoveredCollection === collection.name ? 'translate-x-1' : ''
+                                }`} />
+                              </div>
+                              
+                              {/* Quick Print Button */}
+                              {collection.thumbnail && (
+                                <motion.button
+                                  onClick={(e) => handleQuickPrint(collection, e)}
+                                  className="w-full mt-2 px-4 py-2 bg-[#ff6b35] hover:bg-[#ff8555] text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-lg"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ 
+                                    opacity: hoveredCollection === collection.name ? 1 : 0,
+                                    y: hoveredCollection === collection.name ? 0 : 10
+                                  }}
+                                  transition={{ duration: 0.2 }}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  {loadingImageId === collection.name ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      Loading...
+                                    </>
+                                  ) : successImageId === collection.name ? (
+                                    <>
+                                      <CheckCircle className="w-4 h-4" />
+                                      Added!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Printer className="w-4 h-4" />
+                                      Quick Print
+                                    </>
+                                  )}
+                                </motion.button>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 dark:bg-[#1a1a1a] flex flex-col items-center justify-center gap-2">
+                            <ImageIcon className="w-12 h-12 text-gray-600" />
+                            <p className="text-sm text-gray-500">No photos yet</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Title and description */}
+                      <div>
+                        <h3 className={`text-lg sm:text-xl mb-1 transition-colors duration-300 ${
+                          hoveredCollection === collection.name
+                            ? 'text-[#ff6b35]'
+                            : 'text-gray-900 dark:text-white'
+                        }`}>
+                          {collection.name}
+                        </h3>
+                        {collection.description && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                            {collection.description}
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             )}
           </>
         )}

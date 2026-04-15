@@ -659,93 +659,75 @@ export function PhotographerDashboard({ photographerEmail, onLogout, onUploadCli
             <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-[#2a2a2a] p-6 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">My Photo Library</h2>
               {photos.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {photos.map(photo => (
                     <motion.div
                       key={photo.photoId}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       whileHover={{ y: -4 }}
-                      className="group border border-gray-200 dark:border-[#2a2a2a] rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 bg-white dark:bg-[#0a0a0a]"
+                      className="group border border-gray-200 dark:border-[#2a2a2a] rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 bg-white dark:bg-[#0a0a0a]"
                     >
-                      <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#1a1a1a] dark:to-[#2a2a2a] relative overflow-hidden">
+                      <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#1a1a1a] dark:to-[#2a2a2a] relative overflow-hidden">
                         <ImageWithFallback
                           src={photo.imageUrl}
                           alt={photo.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute top-3 right-3">
+                        <div className="absolute top-2 right-2">
                           {photo.status === 'approved' && (
-                            <span className="px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-sm">
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              Approved
+                            <span className="px-2 py-1 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm">
+                              <CheckCircle className="w-3 h-3" />
+                              <span className="hidden sm:inline">Approved</span>
                             </span>
                           )}
                           {photo.status === 'pending' && (
-                            <span className="px-3 py-1.5 bg-yellow-500 text-white text-xs font-medium rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-sm">
-                              <Clock className="w-3.5 h-3.5" />
-                              Pending
+                            <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm">
+                              <Clock className="w-3 h-3" />
+                              <span className="hidden sm:inline">Pending</span>
                             </span>
                           )}
                           {photo.status === 'rejected' && (
-                            <span className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-sm">
-                              <XCircle className="w-3.5 h-3.5" />
-                              Rejected
+                            <span className="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm">
+                              <XCircle className="w-3 h-3" />
+                              <span className="hidden sm:inline">Rejected</span>
                             </span>
                           )}
                         </div>
                         {/* Gradient overlay on hover */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
-                      <div className="p-5">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-lg">{photo.title}</h3>
-                        <div className="space-y-2.5 text-sm mb-4">
-                          <div className="flex items-center justify-between py-1.5 px-3 bg-gray-50 dark:bg-[#1a1a1a] rounded-lg">
-                            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              Uploaded
-                            </span>
-                            <span className="text-gray-900 dark:text-white font-medium">
-                              {new Date(photo.uploadedAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between py-1.5 px-3 bg-gray-50 dark:bg-[#1a1a1a] rounded-lg">
-                            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4" />
-                              Sales
+                      <div className="p-3">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm line-clamp-1">{photo.title}</h3>
+                        <div className="space-y-1.5 text-xs mb-3">
+                          <div className="flex items-center justify-between py-1 px-2 bg-gray-50 dark:bg-[#1a1a1a] rounded">
+                            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              <span className="hidden sm:inline">Sales</span>
                             </span>
                             <span className="text-gray-900 dark:text-white font-semibold">{photo.totalSales}</span>
                           </div>
-                          <div className="flex items-center justify-between py-1.5 px-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                            <span className="text-green-700 dark:text-green-400 flex items-center gap-2 font-medium">
-                              <DollarSign className="w-4 h-4" />
-                              Earnings
+                          <div className="flex items-center justify-between py-1 px-2 bg-green-50 dark:bg-green-900/20 rounded">
+                            <span className="text-green-700 dark:text-green-400 flex items-center gap-1 font-medium">
+                              <DollarSign className="w-3 h-3" />
                             </span>
                             <span className="text-green-700 dark:text-green-400 font-bold">
                               ${photo.totalEarnings.toFixed(2)}
                             </span>
                           </div>
-                          {photo.lastSaleDate && (
-                            <div className="flex items-center justify-between text-xs pt-1">
-                              <span className="text-gray-500 dark:text-gray-500">Last sale:</span>
-                              <span className="text-gray-600 dark:text-gray-400">
-                                {new Date(photo.lastSaleDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
                         </div>
                         <button
                           onClick={() => deletePhoto(photo.photoId, photo.title, photo.status, photo.totalSales)}
                           disabled={photo.status === 'approved' && photo.totalSales > 0}
                           title={photo.status === 'approved' && photo.totalSales > 0 ? 'Photos with sales cannot be deleted' : 'Delete this photo'}
-                          className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${
+                          className={`flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg font-medium transition-all duration-200 text-xs ${
                             photo.status === 'approved' && photo.totalSales > 0
                               ? 'bg-gray-100 dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-600 cursor-not-allowed'
                               : 'bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800'
                           } border border-gray-200 dark:border-[#2a2a2a]`}
                         >
-                          <Trash2 className="w-4 h-4" />
-                          {photo.status === 'approved' && photo.totalSales > 0 ? 'Cannot Delete' : 'Delete Photo'}
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">{photo.status === 'approved' && photo.totalSales > 0 ? 'Locked' : 'Delete'}</span>
                         </button>
                       </div>
                     </motion.div>

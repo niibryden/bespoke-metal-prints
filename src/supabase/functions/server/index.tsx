@@ -1,6 +1,7 @@
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import * as kv from "./kv_store.tsx";
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const app = new Hono();
 
@@ -633,6 +634,312 @@ app.post("/make-server-3e3a9cd7/track-marketplace-sale", async (c) => {
     });
   } catch (error: any) {
     console.error('Error tracking marketplace sale:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ===== PHOTOGRAPHER PAYOUT SYSTEM ENDPOINTS =====
+
+// Get photographer earnings summary
+app.get('/make-server-3e3a9cd7/photographer/earnings', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Get user from Supabase auth
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (!user || authError) {
+      return c.json({ error: 'Invalid token' }, 401);
+    }
+
+    // Get photographer earnings from KV store
+    const earningsKey = `photographer:${user.id}:earnings`;
+    const payoutsKey = `photographer:${user.id}:payouts`;
+    
+    const earnings = await kv.get(earningsKey) || {
+      total_earnings: 0,
+      pending_earnings: 0,
+      paid_out: 0,
+      available_balance: 0,
+      sales_count: 0,
+      this_month: 0,
+      last_month: 0,
+    };
+
+    const payouts = await kv.getByPrefix(payoutsKey) || [];
+
+    return c.json({
+      summary: earnings,
+      payout_requests: payouts,
+    });
+  } catch (error: any) {
+    console.error('Error fetching earnings:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Request payout
+app.post('/make-server-3e3a9cd7/photographer/request-payout', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (!user || authError) {
+      return c.json({ error: 'Invalid token' }, 401);
+    }
+
+    const { amount, payment_method, payment_details } = await c.req.json();
+
+    // Validate amount
+    if (amount < 50) {
+      return c.json({ error: 'Minimum payout amount is $50' }, 400);
+    }
+
+    // Check available balance
+    const earningsKey = `photographer:${user.id}:earnings`;
+    const earnings = await kv.get(earningsKey) || { available_balance: 0 };
+    
+    if (amount > earnings.available_balance) {
+      return c.json({ error: 'Insufficient balance' }, 400);
+    }
+
+    // Create payout request
+    const payoutId = crypto.randomUUID();
+    const payoutRequest = {
+      id: payoutId,
+      photographer_id: user.id,
+      amount,
+      status: 'pending',
+      requested_at: new Date().toISOString(),
+      payment_method,
+      payment_details,
+    };
+
+    await kv.set(`photographer:${user.id}:payouts:${payoutId}`, payoutRequest);
+
+    // Update available balance
+    earnings.available_balance -= amount;
+    earnings.pending_earnings = (earnings.pending_earnings || 0) + amount;
+    await kv.set(earningsKey, earnings);
+
+    return c.json({ success: true, payout_id: payoutId });
+  } catch (error: any) {
+    console.error('Error requesting payout:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ===== ANALYTICS & AUTO-APPROVAL ENDPOINTS =====
+
+app.get('/make-server-3e3a9cd7/:role/analytics', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Mock analytics data
+    const analytics = {
+      revenue: {
+        today: 1247.89,
+        this_week: 5234.67,
+        this_month: 18392.45,
+        all_time: 125483.92,
+      },
+      orders: {
+        today: 12,
+        this_week: 48,
+        this_month: 187,
+        total: 1245,
+        pending: 8,
+        completed: 1205,
+      },
+      customers: {
+        total: 842,
+        new_this_month: 67,
+        returning_rate: 42,
+      },
+      photographers: {
+        total: 34,
+        active: 28,
+        pending_approval: 3,
+        total_photos: 1247,
+        approved_photos: 1189,
+      },
+      top_products: [
+        { size: '12" × 8"', sales: 234, revenue: 11696.66 },
+        { size: '16" × 24"', sales: 189, revenue: 20789.11 },
+      ],
+      recent_sales: [
+        { id: '1', date: new Date().toISOString(), customer: 'John D.', amount: 89.99, status: 'completed' },
+        { id: '2', date: new Date().toISOString(), customer: 'Sarah M.', amount: 149.99, status: 'pending' },
+      ],
+    };
+
+    const chartData = {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      revenue: [842, 1247, 934, 1456, 1123, 1892, 1678],
+      orders: [8, 12, 9, 14, 11, 18, 16],
+    };
+
+    return c.json({ analytics, chart_data: chartData });
+  } catch (error: any) {
+    console.error('Error fetching analytics:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.get('/make-server-3e3a9cd7/admin/auto-approval-settings', async (c) => {
+  try {
+    const settings = await kv.get('auto_approval_settings') || {
+      enabled: true,
+      min_resolution_width: 3000,
+      min_resolution_height: 2000,
+      max_file_size_mb: 50,
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+      auto_approve_trusted_photographers: true,
+      trust_threshold_sales: 10,
+      require_metadata: false,
+      check_duplicates: true,
+      ai_quality_check: true,
+      min_quality_score: 75,
+    };
+
+    return c.json({ settings });
+  } catch (error: any) {
+    console.error('Error fetching settings:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.put('/make-server-3e3a9cd7/admin/auto-approval-settings', async (c) => {
+  try {
+    const { settings } = await c.req.json();
+    await kv.set('auto_approval_settings', settings);
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Error saving settings:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.get('/make-server-3e3a9cd7/admin/auto-approval-stats', async (c) => {
+  try {
+    const stats = {
+      total_pending: 12,
+      auto_approved_today: 34,
+      auto_rejected_today: 5,
+      manual_review_needed: 3,
+      average_processing_time_seconds: 2.4,
+    };
+    return c.json({ stats });
+  } catch (error: any) {
+    console.error('Error fetching stats:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Customer management endpoints
+app.get('/make-server-3e3a9cd7/admin/customers', async (c) => {
+  try {
+    // Get all customers from auth.users who are not photographers or admins
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Fetch all users from auth
+    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+    
+    if (authError) {
+      console.error('Error fetching auth users:', authError);
+      return c.json({ error: authError.message }, 500);
+    }
+
+    // Get photographer emails to exclude
+    const photographerKeys = await kv.getByPrefix('photographer:');
+    const photographerEmails = new Set(
+      photographerKeys.map(key => key.replace('photographer:', '').split(':')[0])
+    );
+
+    // Filter to only customers (non-photographers, non-admins)
+    const customers = authUsers.users
+      .filter(user => {
+        const email = user.email || '';
+        const isPhotographer = photographerEmails.has(email);
+        const isAdmin = email.includes('admin') || user.user_metadata?.role === 'admin';
+        return !isPhotographer && !isAdmin;
+      })
+      .map(user => ({
+        id: user.id,
+        email: user.email || '',
+        name: user.user_metadata?.name || user.user_metadata?.full_name || 'N/A',
+        createdAt: user.created_at,
+        status: user.banned_until ? 'suspended' : 'active',
+        orderCount: 0, // TODO: Get actual order count
+        totalSpent: 0, // TODO: Get actual total spent
+      }));
+
+    return c.json({ customers });
+  } catch (error: any) {
+    console.error('Error fetching customers:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.put('/make-server-3e3a9cd7/admin/customers/:customerId/status', async (c) => {
+  try {
+    const customerId = c.req.param('customerId');
+    const { status } = await c.req.json();
+    
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    if (status === 'suspended') {
+      // Ban user for 100 years (effectively permanent)
+      const banUntil = new Date();
+      banUntil.setFullYear(banUntil.getFullYear() + 100);
+      
+      const { error } = await supabase.auth.admin.updateUserById(customerId, {
+        ban_duration: '876000h', // 100 years in hours
+      });
+
+      if (error) {
+        console.error('Error suspending customer:', error);
+        return c.json({ error: error.message }, 500);
+      }
+    } else {
+      // Unban user
+      const { error } = await supabase.auth.admin.updateUserById(customerId, {
+        ban_duration: 'none',
+      });
+
+      if (error) {
+        console.error('Error reactivating customer:', error);
+        return c.json({ error: error.message }, 500);
+      }
+    }
+
+    return c.json({ success: true, status });
+  } catch (error: any) {
+    console.error('Error updating customer status:', error);
     return c.json({ error: error.message }, 500);
   }
 });

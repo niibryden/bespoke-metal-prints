@@ -48,6 +48,19 @@ interface ConfiguratorSectionProps {
   onNavigateToStockPhotos?: () => void;
 }
 
+// Helper function to get default sizes
+function getDefaultSizes(): InventorySize[] {
+  return [
+    { id: '1', name: '5" × 7"', displayName: '5" × 7" (Sample)', altName: '5" x 7"', sku: 'SIZE-5X7', altSku: 'SIZE-7X5', quantity: 100, price: 25.00 },
+    { id: '2', name: '12" × 8"', displayName: '12" × 8" (Popular)', altName: '12" x 8"', sku: 'SIZE-12X8', altSku: 'SIZE-8X12', quantity: 100, price: 49.99 },
+    { id: '3', name: '17" × 11"', displayName: '17" × 11"', altName: '17" x 11"', sku: 'SIZE-17X11', altSku: 'SIZE-11X17', quantity: 100, price: 69.99 },
+    { id: '4', name: '24" × 16"', displayName: '24" × 16"', altName: '24" x 16"', sku: 'SIZE-24X16', altSku: 'SIZE-16X24', quantity: 100, price: 109.99 },
+    { id: '5', name: '30" × 20"', displayName: '30" × 20"', altName: '30" x 20"', sku: 'SIZE-30X20', altSku: 'SIZE-20X30', quantity: 100, price: 149.99 },
+    { id: '6', name: '36" × 24"', displayName: '36" × 24"', altName: '36" x 24"', sku: 'SIZE-36X24', altSku: 'SIZE-24X36', quantity: 100, price: 199.99 },
+    { id: '7', name: '40" × 30"', displayName: '40" × 30"', altName: '40" x 30"', sku: 'SIZE-40X30', altSku: 'SIZE-30X40', quantity: 100, price: 269.99 },
+  ];
+}
+
 const steps = [
   { id: 1, name: 'Upload', icon: Upload, description: 'Choose your image' },
   { id: 2, name: 'Customize', icon: Settings, description: 'Select options' },
@@ -210,14 +223,31 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
   useEffect(() => {
     const fetchSizes = async () => {
       try {
+        const serverUrl = getServerUrl();
+        
+        // If no server URL, use default sizes
+        if (!serverUrl) {
+          console.log('No server URL, using default sizes');
+          setAvailableSizes(getDefaultSizes());
+          setLoadingSizes(false);
+          return;
+        }
+        
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
         const response = await fetch(
-          `${getServerUrl()}/inventory`,
+          `${serverUrl}/inventory`,
           {
             headers: {
               'Authorization': `Bearer ${publicAnonKey}`,
             },
+            signal: controller.signal,
           }
         );
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const data = await response.json();
@@ -316,28 +346,16 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
           }
           END OF OLD BROKEN LOGIC */
         }
-      } catch (error) {
-        console.log('Using fallback sizes (network error):', error.message || error);
-        // Fallback to default sizes
-        setAvailableSizes([
-          { id: '1', name: '5" x 7"', sku: 'SIZE-5X7', quantity: 200, price: 25.00 },
-          { id: '1b', name: '7" x 5"', sku: 'SIZE-7X5', quantity: 200, price: 25.00 },
-          { id: '2', name: '12" x 8"', sku: 'SIZE-12X8', quantity: 150, price: 49.99 },
-          { id: '2b', name: '8" x 12"', sku: 'SIZE-8X12', quantity: 150, price: 49.99 },
-          { id: '3', name: '17" x 11"', sku: 'SIZE-17X11', quantity: 120, price: 69.99 },
-          { id: '3b', name: '11" x 17"', sku: 'SIZE-11X17', quantity: 120, price: 69.99 },
-          { id: '4', name: '24" x 16"', sku: 'SIZE-24X16', quantity: 100, price: 109.99 },
-          { id: '4b', name: '16" x 24"', sku: 'SIZE-16X24', quantity: 100, price: 109.99 },
-          { id: '5', name: '30" x 20"', sku: 'SIZE-30X20', quantity: 80, price: 149.99 },
-          { id: '5b', name: '20" x 30"', sku: 'SIZE-20X30', quantity: 80, price: 149.99 },
-          { id: '6', name: '36" x 24"', sku: 'SIZE-36X24', quantity: 60, price: 199.99 },
-          { id: '6b', name: '24" x 36"', sku: 'SIZE-24X36', quantity: 60, price: 199.99 },
-          { id: '7', name: '40" x 30"', sku: 'SIZE-40X30', quantity: 40, price: 269.99 },
-          { id: '7b', name: '30" x 40"', sku: 'SIZE-30X40', quantity: 40, price: 269.99 },
-        ]);
-        
-        // Set default to 12" × 8" from fallback (smallest excluding 5" x 7")
-        setConfig(prev => ({ ...prev, size: '8" × 12"' }));
+      } catch (error: any) {
+        // Handle fetch errors gracefully - don't show error to user
+        if (error?.name === 'AbortError') {
+          console.log('Inventory fetch timed out, using default sizes');
+        } else {
+          console.log('Using fallback sizes - network error:', error?.message || error);
+        }
+        // Always fallback to default sizes on any error
+        setAvailableSizes(getDefaultSizes());
+        setConfig(prev => ({ ...prev, size: '12" × 8"' }));
       } finally {
         setLoadingSizes(false);
       }
@@ -346,7 +364,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
     fetchSizes();
   }, []);
 
-  // Check for existing session
+  // Check for existing session and auth changes
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -731,16 +749,23 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
           console.log('🔗 URL is not signed, using proxy endpoint');
           // Use proxy endpoint which returns image with proper CORS headers
           const serverUrl = getServerUrl();
-          const proxyUrl = `${serverUrl}/proxy-image?url=${encodeURIComponent(stockImageUrl)}`;
-          console.log('🔗 Full Proxy URL:', proxyUrl);
           
-          // Fetch image with authentication and convert to blob URL
-          console.log('🔍 Fetching image via proxy with authentication...');
-          imageResponse = await fetch(proxyUrl, {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
-            }
-          });
+          // If no server URL available, try direct image load
+          if (!serverUrl) {
+            console.log('🔗 No server URL available, attempting direct image load');
+            imageResponse = await fetch(stockImageUrl);
+          } else {
+            const proxyUrl = `${serverUrl}/proxy-image?url=${encodeURIComponent(stockImageUrl)}`;
+            console.log('🔗 Full Proxy URL:', proxyUrl);
+            
+            // Fetch image with authentication and convert to blob URL
+            console.log('🔍 Fetching image via proxy with authentication...');
+            imageResponse = await fetch(proxyUrl, {
+              headers: {
+                'Authorization': `Bearer ${publicAnonKey}`
+              }
+            });
+          }
         }
         
         console.log('🔍 Response status:', imageResponse.status);

@@ -624,39 +624,38 @@ customerApp.get('/make-server-3e3a9cd7/collections', async (c) => {
   try {
     console.log('📷 Fetching stock photo collections...');
     
-    const allCollections = await kv.getByPrefix('collection:');
+    // Use the unified stock:collections key (supports both stock photos and marketplace photos)
+    const collections = await kv.get('stock:collections') || [];
     
-    if (!allCollections || allCollections.length === 0) {
-      return c.json([]);
-    }
+    console.log(`📷 Found ${collections.length} collections from unified system`);
     
-    const allPhotos = await kv.getByPrefix('stock-photo:');
+    // Map to the format expected by the frontend
+    const formattedCollections = collections.map((col: any) => ({
+      id: col.id || col.name, // Use name as fallback ID for backward compatibility
+      title: col.name,
+      description: col.description || '',
+      hidden: col.hidden || false,
+      photos: (col.images || []).map((img: any) => ({
+        id: img.id,
+        url: img.url,
+        originalUrl: img.originalUrl || img.url,
+        s3Key: img.s3Key || '',
+        fileName: img.name || img.title || '',
+        uploadDate: img.uploadedAt || img.uploadDate || new Date().toISOString(),
+        // Preserve marketplace metadata
+        photographerId: img.photographerId,
+        photographerName: img.photographerName,
+        isMarketplacePhoto: img.isMarketplacePhoto || false,
+        royaltyRate: img.royaltyRate,
+        title: img.title || img.name || '',
+        description: img.description || '',
+        tags: img.tags || [],
+      })),
+    }));
     
-    const collections = allCollections
-      .filter((col: any) => !col.hidden)
-      .map((col: any) => {
-        const photos = allPhotos
-          .filter((photo: any) => photo.collectionId === col.id)
-          .map((photo: any) => ({
-            id: photo.id,
-            url: photo.url,
-            s3Key: photo.s3Key,
-            fileName: photo.fileName,
-            uploadDate: photo.uploadDate,
-          }));
-        
-        return {
-          id: col.id,
-          title: col.name,
-          description: col.description || '',
-          hidden: col.hidden || false,
-          photos: photos,
-        };
-      });
-    
-    console.log(`📷 Returning ${collections.length} collections`);
-    return c.json(collections);
-  } catch (error) {
+    console.log(`📷 Returning ${formattedCollections.length} collections with ${formattedCollections.reduce((sum: number, col: any) => sum + col.photos.length, 0)} total photos`);
+    return c.json(formattedCollections);
+  } catch (error: any) {
     console.error('❌ Error fetching collections:', error);
     return c.json({ 
       error: 'Failed to fetch collections',

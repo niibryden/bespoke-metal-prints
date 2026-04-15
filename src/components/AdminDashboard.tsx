@@ -5,13 +5,10 @@ import { AdminOverview } from './admin/AdminOverview';
 import { PhotoManagement } from './admin/PhotoManagement';
 import { InventoryManagement } from './admin/InventoryManagement';
 import { OrderManagement } from './admin/OrderManagement';
-import { DataCleanup } from './admin/DataCleanup';
-import { ExportData } from './admin/ExportData';
 import { AdminSettings } from './admin/AdminSettings';
-import { S3FolderManager } from './admin/S3FolderManager';
-import { ImageLibrary } from './admin/ImageLibrary';
 import { DiscountManagement } from './admin/DiscountManagement';
 import { TestimonialManagement } from './admin/TestimonialManagement';
+import { UserManagement } from './admin/UserManagement';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -25,7 +22,8 @@ import {
   Images,
   Tag,
   Camera,
-  MessageSquare
+  MessageSquare,
+  Users
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -33,7 +31,7 @@ interface AdminDashboardProps {
   adminInfo: { email: string; role: string; name: string; permissions: any; accessToken: string };
 }
 
-type ActiveTab = 'overview' | 'photos' | 'inventory' | 'orders' | 'settings' | 'export' | 'cleanup' | 's3-folders' | 'image-library' | 'discounts' | 'marketplace' | 'testimonials';
+type ActiveTab = 'overview' | 'photos' | 'inventory' | 'orders' | 'settings' | 'discounts' | 'marketplace' | 'testimonials' | 'users';
 
 export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
@@ -58,12 +56,13 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard, permission: 'canViewOrders' },
     { id: 'orders' as const, label: 'Orders', icon: ShoppingBag, permission: 'canViewOrders' },
+    { id: 'users' as const, label: 'User Management', icon: Users, permission: 'canManageInventory' },
+    { id: 'marketplace' as const, label: 'Marketplace Approvals', icon: Camera, permission: 'canManageInventory' },
     { id: 'photos' as const, label: 'Stock Photos', icon: Image, permission: 'canViewOrders' },
     { id: 'inventory' as const, label: 'Inventory', icon: Package, permission: 'canManageInventory' },
     { id: 'discounts' as const, label: 'Discounts', icon: Tag, permission: 'canManageInventory' },
-    { id: 'settings' as const, label: 'Settings', icon: Settings, permission: 'canViewOrders' },
-    { id: 'marketplace' as const, label: 'Marketplace Approvals', icon: Camera, permission: 'canManageInventory' },
     { id: 'testimonials' as const, label: 'Testimonials', icon: MessageSquare, permission: 'canManageInventory' },
+    { id: 'settings' as const, label: 'Settings', icon: Settings, permission: 'canViewOrders' },
   ].filter(tab => !tab.permission || adminInfo.permissions?.[tab.permission]);
 
   console.log('✅ AdminDashboard - tabs after filter:', tabs);
@@ -148,14 +147,11 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
             {activeTab === 'photos' && <PhotoManagement adminInfo={adminInfo} />}
             {activeTab === 'inventory' && <InventoryManagement adminInfo={adminInfo} />}
             {activeTab === 'orders' && <OrderManagement adminInfo={adminInfo} />}
-            {activeTab === 'cleanup' && <DataCleanup adminInfo={adminInfo} />}
-            {activeTab === 'export' && <ExportData adminInfo={adminInfo} />}
             {activeTab === 'settings' && <AdminSettings adminInfo={adminInfo} />}
-            {activeTab === 's3-folders' && <S3FolderManager adminInfo={adminInfo} />}
-            {activeTab === 'image-library' && <ImageLibrary adminInfo={adminInfo} />}
             {activeTab === 'discounts' && <DiscountManagement adminInfo={adminInfo} />}
             {activeTab === 'marketplace' && <AdminMarketplaceApprovals adminEmail={adminInfo.email} />}
             {activeTab === 'testimonials' && <TestimonialManagement adminInfo={adminInfo} />}
+            {activeTab === 'users' && <UserManagement adminInfo={adminInfo} />}
           </div>
         </div>
       </div>

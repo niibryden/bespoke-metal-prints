@@ -311,6 +311,9 @@ adminApp.post('/make-server-3e3a9cd7/admin/login', async (c) => {
     return c.json({
       success: true,
       access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token, // Include refresh token for automatic refresh
+      expires_at: data.session.expires_at, // Include expiration timestamp
+      expires_in: data.session.expires_in, // Include expiration duration
       user: {
         id: user.id,
         email: user.email,
@@ -327,6 +330,79 @@ adminApp.post('/make-server-3e3a9cd7/admin/login', async (c) => {
     console.error('💥 Admin login exception:', error);
     console.error('💥 Stack trace:', error.stack);
     return c.json({ error: 'Login failed', details: error.message }, 500);
+  }
+});
+
+// Admin token refresh - get a new access token using refresh token
+adminApp.post('/make-server-3e3a9cd7/admin/refresh-token', async (c) => {
+  try {
+    const { refresh_token } = await c.req.json();
+
+    console.log('🔄 ===== ADMIN TOKEN REFRESH START =====');
+
+    if (!refresh_token) {
+      return c.json({ error: 'Refresh token is required' }, 400);
+    }
+
+    // Use anon key for token refresh
+    const supabaseAnon = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
+    // Refresh the session using the refresh token
+    const { data, error } = await supabaseAnon.auth.refreshSession({
+      refresh_token
+    });
+
+    if (error) {
+      console.error('❌ Token refresh failed:', error.message);
+      return c.json({ 
+        error: 'Token refresh failed', 
+        details: error.message,
+        forceLogout: true // Signal client to logout
+      }, 401);
+    }
+
+    if (!data.session) {
+      console.error('❌ No session returned from refresh');
+      return c.json({ 
+        error: 'No session returned',
+        forceLogout: true 
+      }, 401);
+    }
+
+    console.log('✅ Token refreshed successfully');
+    console.log('🎫 New access token length:', data.session.access_token?.length || 0);
+
+    // Verify the new token
+    const { data: { user }, error: userError } = await supabaseAnon.auth.getUser(data.session.access_token);
+
+    if (userError || !user) {
+      console.error('❌ Failed to verify refreshed token');
+      return c.json({ 
+        error: 'Invalid refreshed token',
+        forceLogout: true 
+      }, 401);
+    }
+
+    console.log('✅ Refreshed token verified for user:', user.email);
+    console.log('🔐 ===== ADMIN TOKEN REFRESH END =====');
+
+    return c.json({
+      success: true,
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at,
+      expires_in: data.session.expires_in,
+    });
+  } catch (error: any) {
+    console.error('💥 Token refresh exception:', error);
+    return c.json({ 
+      error: 'Token refresh failed', 
+      details: error.message,
+      forceLogout: true 
+    }, 500);
   }
 });
 
@@ -1294,25 +1370,65 @@ adminApp.post('/make-server-3e3a9cd7/admin/collections/:collectionId/images', as
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
 
+    // Dynamically import sharp for image processing
+    console.log('🖼️ Processing image with sharp...');
+    const sharp = (await import('npm:sharp@0.33.5')).default;
+    
+    // Create sharp instance from buffer
+    const image = sharp(buffer);
+    const metadata = await image.metadata();
+    console.log('📐 Original dimensions:', metadata.width, 'x', metadata.height);
+    console.log('📊 Original size:', Math.round(buffer.length / 1024), 'KB');
+
     // Upload original (full resolution for printing) - PRIVATE
-    const originalKey = `stock/original/${collection.name}/${baseFileName}.${extension}`;
+    // Optimize for printing: max 4000px, high quality JPEG
+    const originalProcessed = await sharp(buffer)
+      .resize(4000, 4000, { 
+        fit: 'inside', 
+        withoutEnlargement: true 
+      })
+      .jpeg({ 
+        quality: 95, 
+        progressive: true,
+        mozjpeg: true 
+      })
+      .toBuffer();
+    
+    console.log('✅ Original optimized:', Math.round(originalProcessed.length / 1024), 'KB');
+    
+    const originalKey = `stock/original/${collection.name}/${baseFileName}.jpg`;
     await s3Client.send(new PutObjectCommand({
       Bucket: AWS_S3_BUCKET_NAME,
       Key: originalKey,
-      Body: buffer,
-      ContentType: imageFile.type,
+      Body: originalProcessed,
+      ContentType: 'image/jpeg',
     }));
 
     const originalUrl = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${originalKey}`;
     console.log('✅ Original uploaded (private):', originalUrl);
 
     // Upload web version (optimized for display) - PUBLIC
-    const webKey = `stock/web/${collection.name}/${baseFileName}.${extension}`;
+    // Optimize for web: max 1200px, lower quality
+    const webProcessed = await sharp(buffer)
+      .resize(1200, 1200, { 
+        fit: 'inside', 
+        withoutEnlargement: true 
+      })
+      .jpeg({ 
+        quality: 80, 
+        progressive: true,
+        mozjpeg: true 
+      })
+      .toBuffer();
+    
+    console.log('✅ Web version optimized:', Math.round(webProcessed.length / 1024), 'KB');
+    
+    const webKey = `stock/web/${collection.name}/${baseFileName}.jpg`;
     await s3Client.send(new PutObjectCommand({
       Bucket: AWS_S3_BUCKET_NAME,
       Key: webKey,
-      Body: buffer,
-      ContentType: imageFile.type,
+      Body: webProcessed,
+      ContentType: 'image/jpeg',
     }));
 
     const webUrl = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${webKey}`;
@@ -1323,6 +1439,8 @@ adminApp.post('/make-server-3e3a9cd7/admin/collections/:collectionId/images', as
       id: timestamp.toString(),
       name: imageFile.name,
       url: webUrl, // Use web version as default
+      originalUrl: originalUrl, // High-res version for printing
+      source: 'admin', // Mark as admin-uploaded photo
       uploadedAt: new Date().toISOString(),
     };
 
@@ -1456,6 +1574,55 @@ adminApp.get('/make-server-3e3a9cd7/admin/stock-photos-count', async (c) => {
   }
 });
 
+// Fix marketplace photo URLs (change from original to web URLs)
+adminApp.post('/make-server-3e3a9cd7/admin/fix-marketplace-urls', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const collections = await kv.get('stock:collections') || [];
+    let fixedCount = 0;
+    
+    console.log('🔧 Fixing marketplace photo URLs...');
+    
+    for (const collection of collections) {
+      if (!collection.images || !Array.isArray(collection.images)) continue;
+      
+      for (const image of collection.images) {
+        // Only fix marketplace photos with /original/ URLs
+        if (image.isMarketplacePhoto && image.url && image.url.includes('/original/')) {
+          // Replace /original/ with /web/ in the URL
+          const webUrl = image.url.replace('/original/', '/web/');
+          console.log(`🔄 Fixing: ${image.title || image.id}`);
+          console.log(`   Old: ${image.url}`);
+          console.log(`   New: ${webUrl}`);
+          
+          image.url = webUrl;
+          fixedCount++;
+        }
+      }
+    }
+    
+    if (fixedCount > 0) {
+      await kv.set('stock:collections', collections);
+      console.log(`✅ Fixed ${fixedCount} marketplace photo URLs`);
+    } else {
+      console.log('ℹ️ No marketplace photos needed URL fixes');
+    }
+    
+    return c.json({ 
+      success: true, 
+      fixedCount,
+      message: `Fixed ${fixedCount} marketplace photo URL(s)`
+    });
+  } catch (error: any) {
+    console.error('❌ Failed to fix marketplace URLs:', error);
+    return c.json({ error: 'Failed to fix URLs' }, 500);
+  }
+});
+
 // ==================== ADMIN USERS MANAGEMENT ====================
 
 // Get all admin users
@@ -1556,6 +1723,121 @@ adminApp.delete('/make-server-3e3a9cd7/admin/users/:userId', async (c) => {
   } catch (error: any) {
     console.error('Failed to delete admin user:', error);
     return c.json({ error: 'Failed to delete admin user' }, 500);
+  }
+});
+
+// ==================== CUSTOMER MANAGEMENT ====================
+
+// Get all customers
+adminApp.get('/make-server-3e3a9cd7/admin/customers', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    // Get all order IDs from the index
+    const orderIndex = await kv.get('orders:index') || [];
+    
+    // Fetch all orders
+    const orders = await Promise.all(
+      orderIndex.map((orderId: string) => kv.get(`order:${orderId}`))
+    );
+    
+    const validOrders = orders.filter(Boolean);
+    
+    console.log(`📊 Fetched ${validOrders.length} orders for customer analysis`);
+    
+    // Build customer list from orders with stats
+    const customerMap = new Map<string, any>();
+    
+    validOrders.forEach((order: any) => {
+      const email = order.customerEmail;
+      if (!email) return;
+      
+      if (!customerMap.has(email)) {
+        customerMap.set(email, {
+          email,
+          name: order.customerName || order.shippingAddress?.name || '',
+          createdAt: order.createdAt,
+          totalOrders: 0,
+          totalSpent: 0,
+          lastOrderDate: order.createdAt,
+          status: 'active', // Default status
+        });
+      }
+      
+      const customer = customerMap.get(email);
+      customer.totalOrders++;
+      customer.totalSpent += order.totalAmount || order.amount || 0;
+      
+      // Update last order date if this order is more recent
+      if (new Date(order.createdAt) > new Date(customer.lastOrderDate)) {
+        customer.lastOrderDate = order.createdAt;
+      }
+      
+      // Update first order date (createdAt) if this order is older
+      if (new Date(order.createdAt) < new Date(customer.createdAt)) {
+        customer.createdAt = order.createdAt;
+      }
+    });
+    
+    // Get customer status from KV store if exists
+    const customerStatuses = await kv.get('customer:statuses') || {};
+    Array.from(customerMap.values()).forEach(customer => {
+      if (customerStatuses[customer.email]) {
+        customer.status = customerStatuses[customer.email];
+      }
+    });
+    
+    const customers = Array.from(customerMap.values());
+    
+    console.log(`✅ Returning ${customers.length} unique customers`);
+    
+    return c.json({ 
+      customers,
+      total: customers.length
+    });
+  } catch (error: any) {
+    console.error('❌ Failed to fetch customers:', error);
+    return c.json({ error: 'Failed to fetch customers' }, 500);
+  }
+});
+
+// Update customer status (suspend/reactivate)
+adminApp.put('/make-server-3e3a9cd7/admin/customers/:email/status', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const email = decodeURIComponent(c.req.param('email'));
+    const { status } = await c.req.json();
+    
+    if (!['active', 'suspended'].includes(status)) {
+      return c.json({ error: 'Invalid status. Must be "active" or "suspended"' }, 400);
+    }
+    
+    // Get existing customer statuses
+    const customerStatuses = await kv.get('customer:statuses') || {};
+    
+    // Update status
+    customerStatuses[email] = status;
+    
+    await kv.set('customer:statuses', customerStatuses);
+    
+    console.log(`✅ Customer ${email} status updated to ${status}`);
+    
+    return c.json({ 
+      success: true,
+      message: status === 'suspended' 
+        ? 'Customer access has been suspended' 
+        : 'Customer access has been restored'
+    });
+  } catch (error: any) {
+    console.error('Failed to update customer status:', error);
+    return c.json({ error: 'Failed to update customer status' }, 500);
   }
 });
 
@@ -3595,6 +3877,372 @@ adminApp.post('/make-server-3e3a9cd7/admin/cleanup-broken-photos', async (c) => 
   } catch (error: any) {
     console.error('Failed to cleanup broken photos:', error);
     return c.json({ error: 'Failed to cleanup broken photos: ' + error.message }, 500);
+  }
+});
+
+// ==================== PHOTO ARCHITECTURE MIGRATION ====================
+
+// Migrate photo structure to unified architecture
+adminApp.post('/make-server-3e3a9cd7/admin/migrate-photo-structure', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    console.log('🔄 Starting photo structure migration...');
+    
+    const collections = await kv.get('stock:collections') || [];
+    let migrated = 0;
+    let alreadyMigrated = 0;
+    let errors = 0;
+    const migrationLog: string[] = [];
+
+    for (const collection of collections) {
+      for (const image of (collection.images || [])) {
+        try {
+          let needsUpdate = false;
+
+          // Step 1: Add source field if missing
+          if (!image.source) {
+            // Determine source based on existing flags
+            if (image.isMarketplacePhoto || image.photographerId) {
+              image.source = 'marketplace';
+              migrationLog.push(`✅ ${image.id || image.name}: Set source to 'marketplace'`);
+            } else {
+              image.source = 'admin';
+              migrationLog.push(`✅ ${image.id || image.name}: Set source to 'admin'`);
+            }
+            needsUpdate = true;
+          }
+
+          // Step 2: Standardize URL fields
+          // Admin photos: ensure both url and originalUrl exist
+          // Marketplace photos: ensure url (webUrl) and originalUrl (s3Url) exist
+          if (image.source === 'marketplace') {
+            // Marketplace photo
+            if (!image.url && image.webUrl) {
+              image.url = image.webUrl;
+              migrationLog.push(`✅ ${image.id || image.name}: Set url from webUrl`);
+              needsUpdate = true;
+            }
+            if (!image.originalUrl && image.s3Url) {
+              image.originalUrl = image.s3Url;
+              migrationLog.push(`✅ ${image.id || image.name}: Set originalUrl from s3Url`);
+              needsUpdate = true;
+            }
+            // Ensure webUrl and s3Url are populated for backward compatibility
+            if (!image.webUrl && image.url) {
+              image.webUrl = image.url;
+              needsUpdate = true;
+            }
+            if (!image.s3Url && image.originalUrl) {
+              image.s3Url = image.originalUrl;
+              needsUpdate = true;
+            }
+          } else {
+            // Admin photo
+            if (!image.originalUrl && image.url) {
+              image.originalUrl = image.url;
+              migrationLog.push(`✅ ${image.id || image.name}: Set originalUrl from url`);
+              needsUpdate = true;
+            }
+          }
+
+          // Step 3: Ensure name field exists
+          if (!image.name && image.title) {
+            image.name = image.title;
+            migrationLog.push(`✅ ${image.id || image.name}: Set name from title`);
+            needsUpdate = true;
+          } else if (!image.name) {
+            // Extract name from URL as last resort
+            const urlParts = (image.url || '').split('/');
+            image.name = urlParts[urlParts.length - 1] || 'Untitled';
+            migrationLog.push(`⚠️ ${image.id}: Generated name from URL: ${image.name}`);
+            needsUpdate = true;
+          }
+
+          // Step 4: Ensure uploadedAt exists
+          if (!image.uploadedAt) {
+            image.uploadedAt = collection.createdAt || new Date().toISOString();
+            migrationLog.push(`✅ ${image.id || image.name}: Set uploadedAt from collection`);
+            needsUpdate = true;
+          }
+
+          // Step 5: Generate ID if missing
+          if (!image.id) {
+            image.id = `img_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+            migrationLog.push(`✅ ${image.name}: Generated ID: ${image.id}`);
+            needsUpdate = true;
+          }
+
+          if (needsUpdate) {
+            migrated++;
+          } else {
+            alreadyMigrated++;
+          }
+        } catch (error: any) {
+          errors++;
+          migrationLog.push(`❌ Error migrating ${image.id || image.name}: ${error.message}`);
+          console.error('Migration error for image:', image, error);
+        }
+      }
+    }
+
+    // Save updated collections
+    await kv.set('stock:collections', collections);
+
+    console.log(`✅ Migration complete: ${migrated} migrated, ${alreadyMigrated} already correct, ${errors} errors`);
+
+    return c.json({
+      success: true,
+      migrated,
+      alreadyMigrated,
+      errors,
+      totalPhotos: migrated + alreadyMigrated + errors,
+      migrationLog: migrationLog.slice(0, 100), // Return first 100 log entries
+      fullLogAvailable: migrationLog.length > 100
+    });
+  } catch (error: any) {
+    console.error('❌ Migration failed:', error);
+    return c.json({ 
+      error: 'Migration failed',
+      details: error.message 
+    }, 500);
+  }
+});
+
+// Clean up orphaned marketplace photos (files that don't exist in S3)
+adminApp.post('/make-server-3e3a9cd7/admin/cleanup-orphaned-photos', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    console.log('🧹 Starting orphaned photo cleanup...');
+    
+    const collections = await kv.get('stock:collections') || [];
+    let totalPhotos = 0;
+    let orphanedPhotos = 0;
+    let validPhotos = 0;
+    let errors = 0;
+    const cleanupLog: string[] = [];
+    
+    // Import S3 client for file existence checks
+    const { S3Client, HeadObjectCommand } = await import('npm:@aws-sdk/client-s3@3');
+    
+    const AWS_ACCESS_KEY_ID = Deno.env.get('AWS_ACCESS_KEY_ID');
+    const AWS_SECRET_ACCESS_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+    const AWS_REGION = Deno.env.get('AWS_REGION') || 'us-east-1';
+    
+    if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
+      cleanupLog.push('⚠️ AWS credentials not configured - cannot verify S3 files');
+      return c.json({ 
+        success: false, 
+        error: 'AWS credentials not configured',
+        cleanupLog 
+      });
+    }
+    
+    const s3Client = new S3Client({
+      region: AWS_REGION,
+      credentials: {
+        accessKeyId: AWS_ACCESS_KEY_ID,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+      },
+    });
+    
+    // Helper function to check if S3 file exists
+    async function fileExistsInS3(url: string): Promise<boolean> {
+      try {
+        // Extract bucket and key from URL
+        // Format: https://bucket.s3.region.amazonaws.com/key
+        const urlMatch = url.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/);
+        if (!urlMatch) {
+          return true; // Not an S3 URL, assume it's valid
+        }
+        
+        const bucket = urlMatch[1];
+        const key = decodeURIComponent(urlMatch[3]);
+        
+        const headCommand = new HeadObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        });
+        
+        await s3Client.send(headCommand);
+        return true; // File exists
+      } catch (error: any) {
+        if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+          return false; // File doesn't exist
+        }
+        // For other errors, assume file exists (permissions, network issues, etc.)
+        console.warn('Warning checking S3 file:', error.message);
+        return true;
+      }
+    }
+    
+    // Scan all collections and check marketplace photos
+    for (const collection of collections) {
+      const originalImageCount = (collection.images || []).length;
+      const validImages = [];
+      
+      for (const image of (collection.images || [])) {
+        totalPhotos++;
+        
+        try {
+          // Only check marketplace photos
+          if (image.source === 'marketplace') {
+            const checkUrl = image.originalUrl || image.s3Url || image.url;
+            
+            if (!checkUrl) {
+              cleanupLog.push(`❌ ${collection.name}/${image.id || image.name}: No URL to check`);
+              orphanedPhotos++;
+              errors++;
+              continue; // Skip this photo
+            }
+            
+            const exists = await fileExistsInS3(checkUrl);
+            
+            if (!exists) {
+              cleanupLog.push(`🗑️ ${collection.name}/${image.id || image.name}: File not found in S3 - ${checkUrl.substring(0, 80)}`);
+              orphanedPhotos++;
+              // Don't add to validImages - this removes the photo
+            } else {
+              cleanupLog.push(`✅ ${collection.name}/${image.id || image.name}: File exists in S3`);
+              validImages.push(image);
+              validPhotos++;
+            }
+          } else {
+            // Admin photos - keep as-is
+            validImages.push(image);
+            validPhotos++;
+          }
+        } catch (error: any) {
+          cleanupLog.push(`❌ ${collection.name}/${image.id || image.name}: Error checking file - ${error.message}`);
+          // On error, keep the photo to be safe
+          validImages.push(image);
+          errors++;
+        }
+      }
+      
+      // Update collection with filtered images
+      collection.images = validImages;
+      
+      if (originalImageCount !== validImages.length) {
+        cleanupLog.push(`📝 ${collection.name}: Removed ${originalImageCount - validImages.length} orphaned photo(s)`);
+      }
+    }
+    
+    // Save updated collections
+    await kv.set('stock:collections', collections);
+    
+    console.log(`✅ Cleanup complete: ${orphanedPhotos} orphaned photos removed, ${validPhotos} valid photos kept, ${errors} errors`);
+    
+    return c.json({
+      success: true,
+      totalPhotos,
+      orphanedPhotos,
+      validPhotos,
+      errors,
+      cleanupLog: cleanupLog.slice(0, 100), // Return first 100 log entries
+      fullLogAvailable: cleanupLog.length > 100
+    });
+  } catch (error: any) {
+    console.error('❌ Cleanup failed:', error);
+    return c.json({ 
+      error: 'Cleanup failed',
+      details: error.message 
+    }, 500);
+  }
+});
+
+// Get photo architecture statistics
+adminApp.get('/make-server-3e3a9cd7/admin/photo-architecture-stats', async (c) => {
+  const auth = await verifyAdmin(c.req.header('Authorization'));
+  if (!auth.authorized) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const collections = await kv.get('stock:collections') || [];
+    
+    const stats = {
+      totalCollections: collections.length,
+      totalPhotos: 0,
+      adminPhotos: 0,
+      marketplacePhotos: 0,
+      unknownSource: 0,
+      missingUrl: 0,
+      missingOriginalUrl: 0,
+      missingName: 0,
+      missingId: 0,
+      photosNeedingMigration: 0,
+      collectionBreakdown: [] as any[]
+    };
+
+    for (const collection of collections) {
+      const collectionStats = {
+        name: collection.name,
+        totalPhotos: (collection.images || []).length,
+        admin: 0,
+        marketplace: 0,
+        needsMigration: 0
+      };
+
+      for (const image of (collection.images || [])) {
+        stats.totalPhotos++;
+
+        // Check source
+        if (image.source === 'admin') {
+          stats.adminPhotos++;
+          collectionStats.admin++;
+        } else if (image.source === 'marketplace') {
+          stats.marketplacePhotos++;
+          collectionStats.marketplace++;
+        } else {
+          stats.unknownSource++;
+        }
+
+        // Check for missing fields
+        let needsMigration = false;
+        
+        if (!image.source) {
+          needsMigration = true;
+        }
+        if (!image.url) {
+          stats.missingUrl++;
+          needsMigration = true;
+        }
+        if (!image.originalUrl) {
+          stats.missingOriginalUrl++;
+          needsMigration = true;
+        }
+        if (!image.name) {
+          stats.missingName++;
+          needsMigration = true;
+        }
+        if (!image.id) {
+          stats.missingId++;
+          needsMigration = true;
+        }
+
+        if (needsMigration) {
+          stats.photosNeedingMigration++;
+          collectionStats.needsMigration++;
+        }
+      }
+
+      if (collectionStats.totalPhotos > 0) {
+        stats.collectionBreakdown.push(collectionStats);
+      }
+    }
+
+    return c.json({ stats });
+  } catch (error: any) {
+    console.error('Failed to get photo stats:', error);
+    return c.json({ error: 'Failed to get statistics' }, 500);
   }
 });
 

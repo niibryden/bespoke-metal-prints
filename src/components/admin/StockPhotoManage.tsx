@@ -547,6 +547,40 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
     }
   };
 
+  const fixMarketplaceUrls = async () => {
+    if (!confirm('This will fix marketplace photo URLs (change from /original/ to /web/). Continue?')) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${serverUrl}/admin/fix-marketplace-urls`, {
+        method: 'POST',
+        headers: {
+          'Authorization': getAuthHeader(),
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ Success! ${data.message}`);
+        fetchCollections();
+        
+        // Dispatch event to notify all components
+        window.dispatchEvent(new Event('collectionsUpdated'));
+      } else {
+        const error = await response.json();
+        alert(`Failed to fix URLs: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to fix marketplace URLs:', error);
+      alert('Failed to fix marketplace URLs. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -567,6 +601,14 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
         {collections.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {[
+              {
+                key: 'fix-marketplace-urls',
+                onClick: fixMarketplaceUrls,
+                className: 'bg-orange-600/10 text-orange-500 border-orange-500/20 hover:bg-orange-600/20',
+                title: 'Fix marketplace photo URLs (change from /original/ to /web/)',
+                icon: AlertTriangle,
+                label: 'Fix Marketplace URLs',
+              },
               {
                 key: 'update-descriptions',
                 onClick: updateCollectionDescriptions,
@@ -617,7 +659,7 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                   title={btn.title}
                 >
                   <Icon className="w-4 h-4" />
-                  {btn.label}
+                  <span>{btn.label}</span>
                 </button>
               );
             })}

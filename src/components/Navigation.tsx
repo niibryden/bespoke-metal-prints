@@ -54,6 +54,7 @@ export function Navigation({
   const [showCart, setShowCart] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showLearnDropdown, setShowLearnDropdown] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false); // Prevent concurrent signOut calls
   const { theme, toggleTheme } = useTheme();
   const { getItemCount } = useCart();
   
@@ -74,11 +75,19 @@ export function Navigation({
 
       // Set new timer
       inactivityTimer = setTimeout(async () => {
+        if (isSigningOut) return; // Prevent concurrent signOut
         console.log('User inactive for 30 minutes, signing out...');
-        await supabase.auth.signOut();
-        setUser(null);
-        setShowAccount(false);
-        alert('You have been signed out due to inactivity.');
+        setIsSigningOut(true);
+        try {
+          await supabase.auth.signOut();
+          setUser(null);
+          setShowAccount(false);
+          alert('You have been signed out due to inactivity.');
+        } catch (error) {
+          console.error('Error during inactivity signout:', error);
+        } finally {
+          setIsSigningOut(false);
+        }
       }, INACTIVITY_TIMEOUT);
     };
 
@@ -101,7 +110,7 @@ export function Navigation({
         document.removeEventListener(event, resetTimer, true);
       });
     };
-  }, [user, supabase]);
+  }, [user, supabase, isSigningOut]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -132,10 +141,13 @@ export function Navigation({
   }, [supabase]);
 
   const handleSignOut = async () => {
+    if (isSigningOut) return; // Prevent concurrent signOut calls
+    setIsSigningOut(true);
     await supabase.auth.signOut();
     setUser(null);
     setIsMobileMenuOpen(false);
     setShowAccount(false); // Close account modal on sign out
+    setIsSigningOut(false);
   };
 
   const handleReorder = (order: any) => {

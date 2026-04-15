@@ -88,6 +88,9 @@ export function StockPhotoUpload({ adminInfo }: { adminInfo?: { email: string; r
     }));
 
     setPhotos(prev => [...prev, ...newPhotos]);
+    
+    // Clear the input so the same file can be selected again
+    e.target.value = '';
   };
 
   const updatePhoto = (id: string, updates: Partial<UploadedPhoto>) => {
@@ -144,8 +147,17 @@ export function StockPhotoUpload({ adminInfo }: { adminInfo?: { email: string; r
         return;
       }
 
-      // Extract just the numeric part of the ID
-      const collectionId = collection.id.replace('collection:', '');
+      // Ensure collection has an ID
+      if (!collection.id) {
+        alert('Collection has no ID');
+        return;
+      }
+
+      // Extract just the numeric part of the ID if it starts with "collection:"
+      // Otherwise use the ID as-is (newer format is just numeric)
+      const collectionId = typeof collection.id === 'string' && collection.id.startsWith('collection:') 
+        ? collection.id.replace('collection:', '') 
+        : collection.id;
       
       const response = await fetch(`${serverUrl}/admin/collections/${collectionId}`, {
         method: 'PUT',
@@ -185,9 +197,18 @@ export function StockPhotoUpload({ adminInfo }: { adminInfo?: { email: string; r
       return;
     }
 
+    // Ensure collection has an ID
+    if (!collection.id) {
+      alert('Collection has no ID');
+      return;
+    }
+
     try {
-      // Extract just the numeric part of the ID
-      const collectionId = collection.id.replace('collection:', '');
+      // Extract just the numeric part of the ID if it starts with "collection:"
+      // Otherwise use the ID as-is (newer format is just numeric)
+      const collectionId = typeof collection.id === 'string' && collection.id.startsWith('collection:') 
+        ? collection.id.replace('collection:', '') 
+        : collection.id;
       
       const response = await fetch(`${serverUrl}/admin/collections/${collectionId}`, {
         method: 'DELETE',
@@ -223,8 +244,16 @@ export function StockPhotoUpload({ adminInfo }: { adminInfo?: { email: string; r
 
       console.log('Uploading photo to collection:', collection.name, 'Full collection:', collection);
 
+      // Ensure collection has an ID
+      if (!collection.id) {
+        throw new Error(`Collection "${photo.collection}" has no ID`);
+      }
+
       // Extract just the numeric part of the ID if it starts with "collection:"
-      const collectionId = collection.id.replace('collection:', '');
+      // Otherwise use the ID as-is (newer format is just numeric)
+      const collectionId = typeof collection.id === 'string' && collection.id.startsWith('collection:') 
+        ? collection.id.replace('collection:', '') 
+        : collection.id;
       console.log('Collection ID for upload:', collectionId);
 
       // Create form data
@@ -283,8 +312,17 @@ export function StockPhotoUpload({ adminInfo }: { adminInfo?: { email: string; r
 
   const uploadAllPhotos = async () => {
     const pendingPhotos = photos.filter(p => p.status === 'pending' || p.status === 'error');
-    for (const photo of pendingPhotos) {
-      await uploadPhoto(photo);
+    
+    // Upload in parallel (max 3 concurrent uploads to avoid overwhelming the server)
+    const CONCURRENT_UPLOADS = 3;
+    const batches = [];
+    
+    for (let i = 0; i < pendingPhotos.length; i += CONCURRENT_UPLOADS) {
+      batches.push(pendingPhotos.slice(i, i + CONCURRENT_UPLOADS));
+    }
+    
+    for (const batch of batches) {
+      await Promise.all(batch.map(photo => uploadPhoto(photo)));
     }
   };
 
@@ -294,7 +332,7 @@ export function StockPhotoUpload({ adminInfo }: { adminInfo?: { email: string; r
         <div>
           <h2 className="text-2xl text-white [data-theme='light']_&:text-gray-900">Stock Photo Upload</h2>
           <p className="text-sm text-gray-400 [data-theme='light']_&:text-gray-600 mt-1">
-            Each upload stores 2 versions: full resolution for printing + optimized for web display
+            ⚡ Fast uploads with automatic optimization: 95% quality print version (max 4000px) + 80% quality web version (max 1200px)
           </p>
         </div>
         <button

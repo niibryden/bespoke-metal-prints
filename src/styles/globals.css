@@ -1,4 +1,8 @@
 @custom-variant dark (&:is(.dark *), &:is([data-theme='dark'] *));
+@custom-variant light (&:is([data-theme='light'] *));
+
+/* Import Design System */
+@import './design-system.css';
 
 :root {
   --font-size: 16px;
@@ -157,6 +161,79 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Enhanced focus indicators for accessibility */
+  *:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button:focus-visible {
+    box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.3);
+  }
+
+  a:focus-visible {
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.3);
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+
+  /* Keyboard navigation indicator */
+  body.keyboard-navigation *:focus {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Improved color contrast for better readability */
+  .text-gray-400 {
+    color: #6b7280;
+  }
+
+  [data-theme='light'] .text-gray-400 {
+    color: #4b5563; /* Darker for better contrast on white */
+  }
+
+  /* Touch targets - minimum 44x44px for mobile */
+  @media (max-width: 768px) {
+    button,
+    a,
+    input[type="checkbox"],
+    input[type="radio"],
+    select {
+      min-height: 44px;
+      min-width: 44px;
+      touch-action: manipulation;
+    }
+  }
+
+  /* Screen reader only class */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .sr-only-focusable:focus,
+  .sr-only-focusable:active {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
   }
 
   /* Aggressively hide skip to main content link - do not show on website */

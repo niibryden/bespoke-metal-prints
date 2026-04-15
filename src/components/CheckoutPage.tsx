@@ -6,6 +6,7 @@ import { getSupabaseClient } from '../utils/supabase/client';
 import { OrderConfirmation } from './OrderConfirmation';
 import { StripePaymentForm } from './StripePaymentForm';
 import { TrustBadges } from './TrustBadges';
+import { TrustBadgesCheckout } from './TrustBadgesCheckout';
 import { getShippingDimensions } from '../utils/shipping-dimensions';
 import { createThumbnail } from '../utils/image-thumbnail';
 import { AuthModal } from './AuthModal';
@@ -1080,6 +1081,11 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
               {/* Trust Badges */}
               <div className="mb-8">
                 <TrustBadges variant="checkout" />
+              </div>
+
+              {/* Enhanced Trust Badges for Payment Security */}
+              <div className="mb-8">
+                <TrustBadgesCheckout />
               </div>
 
               {/* Stripe Payment Element */}

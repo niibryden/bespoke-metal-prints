@@ -1,12 +1,25 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Upload, Image as ImageIcon, Loader2, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Loader2, CheckCircle, AlertCircle, Info, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { getServerUrl } from '../utils/serverUrl';
 
 interface PhotoUploadModalProps {
   onClose: () => void;
   onSuccess?: () => void;
+}
+
+interface UploadFile {
+  file: File;
+  preview: string;
+  id: string;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  progress: number;
+  error?: string;
+  title: string;
+  description: string;
+  tags: string;
+  category: string;
 }
 
 const CATEGORIES = [
@@ -33,154 +46,226 @@ const PRINT_SIZES_AND_PRICES = [
 ];
 
 export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
-  const [preview, setPreview] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [files, setFiles] = useState<UploadFile[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [completedUploads, setCompletedUploads] = useState(0);
+  const [isRoyaltyExpanded, setIsRoyaltyExpanded] = useState(false);
+  const [globalCategory, setGlobalCategory] = useState('nature');
+  const [globalTags, setGlobalTags] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    tags: '',
-    category: 'nature',
-    basePrice: '0',
-  });
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    // Validate file type
-    if (!selectedFile.type.startsWith('image/')) {
-      setError('Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 50MB)
-    if (selectedFile.size > 50 * 1024 * 1024) {
-      setError('Image must be less than 50MB');
-      return;
-    }
-
-    setFile(selectedFile);
     setError('');
+    const newFiles: UploadFile[] = [];
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(selectedFile);
-
-    // Check image dimensions
-    const img = new Image();
-    img.onload = () => {
-      if (img.width < 3000 || img.height < 2000) {
-        setError(`Image resolution too low: ${img.width}x${img.height}. Minimum required: 3000x2000 pixels`);
+    for (const file of selectedFiles) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError(`${file.name} is not an image file`);
+        continue;
       }
-    };
-    img.src = URL.createObjectURL(selectedFile);
+
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        setError(`${file.name} is too large (max 50MB)`);
+        continue;
+      }
+
+      // Generate filename without extension for default title
+      const defaultTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+      const uploadFile: UploadFile = {
+        file,
+        preview: '',
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        status: 'pending',
+        progress: 0,
+        title: defaultTitle,
+        description: '',
+        tags: globalTags,
+        category: globalCategory,
+      };
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadFile.preview = e.target?.result as string;
+        setFiles((prev) => {
+          const index = prev.findIndex((f) => f.id === uploadFile.id);
+          if (index >= 0) {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], preview: uploadFile.preview };
+            return updated;
+          }
+          return prev;
+        });
+      };
+      reader.readAsDataURL(file);
+
+      // Check image dimensions in background
+      const img = new Image();
+      img.onload = () => {
+        if (img.width < 3000 || img.height < 2000) {
+          setFiles((prev) => {
+            const index = prev.findIndex((f) => f.id === uploadFile.id);
+            if (index >= 0) {
+              const updated = [...prev];
+              updated[index] = {
+                ...updated[index],
+                status: 'error',
+                error: `Resolution too low: ${img.width}×${img.height}px (minimum: 3000×2000px)`,
+              };
+              return updated;
+            }
+            return prev;
+          });
+        }
+      };
+      img.src = URL.createObjectURL(file);
+
+      newFiles.push(uploadFile);
+    }
+
+    setFiles((prev) => [...prev, ...newFiles]);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const removeFile = (id: string) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
 
-    if (!file) {
-      setError('Please select an image to upload');
-      return;
-    }
+  const updateFile = (id: string, updates: Partial<UploadFile>) => {
+    setFiles((prev) => {
+      const index = prev.findIndex((f) => f.id === id);
+      if (index >= 0) {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], ...updates };
+        return updated;
+      }
+      return prev;
+    });
+  };
 
-    if (!formData.title.trim()) {
-      setError('Please enter a title for your photo');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setUploadProgress(0);
+  const uploadSingleFile = async (uploadFile: UploadFile, session: any) => {
+    updateFile(uploadFile.id, { status: 'uploading', progress: 0 });
 
     try {
-      // Get current user session
-      const supabase = getSupabaseClient();
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('You must be logged in to upload photos');
-      }
-
       // Create FormData
-      const formDataToSend = new FormData();
-      formDataToSend.append('file', file);
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('tags', formData.tags);
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('basePrice', formData.basePrice);
+      const formData = new FormData();
+      formData.append('file', uploadFile.file);
+      formData.append('title', uploadFile.title);
+      formData.append('description', uploadFile.description);
+      formData.append('tags', uploadFile.tags);
+      formData.append('category', uploadFile.category);
+      formData.append('basePrice', '0');
 
-      // Simulate progress for better UX
+      // Simulate progress
       const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 10;
+        updateFile(uploadFile.id, {
+          progress: Math.min((uploadFile.progress || 0) + 10, 90),
         });
       }, 200);
-
-      // Upload photo
-      console.log('📤 Uploading to:', `${getServerUrl()}/marketplace/photographer/upload`);
 
       const response = await fetch(`${getServerUrl()}/marketplace/photographer/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: formDataToSend,
+        body: formData,
       });
 
       clearInterval(progressInterval);
-      setUploadProgress(100);
 
-      // Read response as text first, then parse as JSON
       const responseText = await response.text();
-      
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('❌ Non-JSON response from server:', responseText.substring(0, 200));
         throw new Error(`Server error (${response.status}): Invalid response format`);
       }
 
       if (!response.ok) {
-        // Show detailed error message from server
         const errorMsg = data.message || data.error || 'Failed to upload photo';
-        console.error('❌ Upload failed:', errorMsg);
         throw new Error(errorMsg);
       }
 
-      console.log('✅ Photo uploaded successfully:', data.photo.id);
-      setSuccess(true);
-
-      // Close modal after a delay
-      setTimeout(() => {
-        if (onSuccess) onSuccess();
-        onClose();
-      }, 2000);
+      updateFile(uploadFile.id, { status: 'success', progress: 100 });
+      setCompletedUploads((prev) => prev + 1);
     } catch (err: any) {
-      console.error('❌ Photo upload error:', err);
-      setError(err.message || 'Failed to upload photo');
-      setUploadProgress(0);
-    } finally {
-      setLoading(false);
+      console.error(`❌ Upload failed for ${uploadFile.title}:`, err);
+      updateFile(uploadFile.id, {
+        status: 'error',
+        progress: 0,
+        error: err.message || 'Upload failed',
+      });
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (files.length === 0) {
+      setError('Please select at least one image to upload');
+      return;
+    }
+
+    // Check if any file has validation errors
+    const invalidFiles = files.filter((f) => f.status === 'error');
+    if (invalidFiles.length > 0) {
+      setError('Please remove files with errors before uploading');
+      return;
+    }
+
+    // Check if all files have titles
+    const missingTitles = files.filter((f) => !f.title.trim());
+    if (missingTitles.length > 0) {
+      setError('Please provide titles for all photos');
+      return;
+    }
+
+    setUploading(true);
+    setError('');
+    setCompletedUploads(0);
+
+    try {
+      // Get current user session
+      const supabase = getSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('You must be logged in to upload photos');
+      }
+
+      // Upload files sequentially to avoid overwhelming the server
+      for (const file of files) {
+        if (file.status !== 'error') {
+          await uploadSingleFile(file, session);
+        }
+      }
+
+      // Close modal after a delay if all uploads succeeded
+      const failedUploads = files.filter((f) => f.status === 'error');
+      if (failedUploads.length === 0) {
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+          onClose();
+        }, 2000);
+      } else {
+        setError(`${failedUploads.length} file(s) failed to upload. Please retry or remove them.`);
+      }
+    } catch (err: any) {
+      console.error('❌ Upload error:', err);
+      setError(err.message || 'Failed to upload photos');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const allUploadsComplete = files.length > 0 && files.every((f) => f.status === 'success');
+  const hasErrors = files.some((f) => f.status === 'error');
 
   return (
     <motion.div
@@ -189,11 +274,11 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !loading) onClose();
+        if (e.target === e.currentTarget && !uploading) onClose();
       }}
     >
       <motion.div
-        className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
@@ -205,13 +290,15 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
               <Upload className="w-5 h-5 text-[#ff6b35]" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Upload Photo</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Add a new photo to the marketplace</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Upload Photos</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {files.length > 0 ? `${files.length} photo${files.length === 1 ? '' : 's'} selected` : 'Add photos to the marketplace'}
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            disabled={loading}
+            disabled={uploading}
             className="p-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-5 h-5" />
@@ -221,7 +308,7 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
         {/* Content */}
         <div className="p-6">
           <AnimatePresence mode="wait">
-            {success ? (
+            {allUploadsComplete ? (
               <motion.div
                 key="success"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -238,10 +325,10 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
                   <CheckCircle className="w-10 h-10 text-green-500" />
                 </motion.div>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Photo Uploaded Successfully!
+                  {files.length === 1 ? 'Photo' : `All ${files.length} Photos`} Uploaded Successfully!
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Your photo will be reviewed within 24 hours and then appear in the marketplace.
+                  Your photo{files.length === 1 ? '' : 's'} will be reviewed within 24 hours and then appear in the marketplace.
                 </p>
               </motion.div>
             ) : (
@@ -260,7 +347,7 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
                     <div className="text-sm text-blue-900 dark:text-blue-100">
                       <p className="font-semibold mb-1">Photo Requirements:</p>
                       <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                        <li>• Minimum 3000 x 2000 pixels (6MP+)</li>
+                        <li>• Minimum 3000 × 2000 pixels (6MP+)</li>
                         <li>• Original work - you own full rights</li>
                         <li>• Professional quality composition</li>
                         <li>• No watermarks (we'll protect your work)</li>
@@ -270,58 +357,83 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
                 </div>
 
                 {/* Royalty Pricing Guide */}
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="p-2 bg-green-500 rounded-lg">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setIsRoyaltyExpanded(!isRoyaltyExpanded)}
+                    className="w-full flex items-start gap-3 p-5 hover:bg-green-100/50 dark:hover:bg-green-900/10 transition-colors"
+                  >
+                    <div className="p-2 bg-green-500 rounded-lg flex-shrink-0">
                       <Info className="w-5 h-5 text-white" />
                     </div>
-                    <div>
+                    <div className="flex-1 text-left">
                       <h3 className="font-bold text-green-900 dark:text-green-100 text-lg">
                         Your Royalty Earnings (25%)
                       </h3>
                       <p className="text-sm text-green-800 dark:text-green-200 mt-1">
-                        You earn 25% every time a customer orders your photo as a metal print. Prices vary by size:
+                        You earn 25% every time a customer orders your photo as a metal print.
                       </p>
                     </div>
-                  </div>
+                    <div className="p-2 flex-shrink-0">
+                      {isRoyaltyExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-green-700 dark:text-green-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-green-700 dark:text-green-400" />
+                      )}
+                    </div>
+                  </button>
                   
-                  <div className="bg-white dark:bg-[#0a0a0a] rounded-lg overflow-hidden border border-green-200 dark:border-green-800/50">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-green-100 dark:bg-green-900/30 border-b border-green-200 dark:border-green-800">
-                          <th className="text-left px-4 py-2 font-semibold text-green-900 dark:text-green-100">Print Size</th>
-                          <th className="text-right px-4 py-2 font-semibold text-green-900 dark:text-green-100">Customer Pays</th>
-                          <th className="text-right px-4 py-2 font-semibold text-green-900 dark:text-green-100">You Earn (25%)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {PRINT_SIZES_AND_PRICES.map((item, index) => (
-                          <tr 
-                            key={item.size} 
-                            className={`border-b border-green-100 dark:border-green-900/30 ${
-                              index % 2 === 0 ? 'bg-green-50/30 dark:bg-green-900/10' : ''
-                            }`}
-                          >
-                            <td className="px-4 py-2.5 text-gray-900 dark:text-white font-medium">
-                              {item.size}
-                            </td>
-                            <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
-                              ${item.basePrice.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-bold">
-                              ${item.yourRoyalty.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="mt-3 text-xs text-green-800 dark:text-green-200 space-y-1">
-                    <p>💡 <strong>Example:</strong> If a customer orders your photo as a 24" × 16" print for $109.99, you earn $27.50</p>
-                    <p>📊 <strong>Multiple sales:</strong> One photo can be sold unlimited times across different sizes</p>
-                    <p>✅ <strong>Full transparency:</strong> Track every sale in your dashboard with complete details</p>
-                  </div>
+                  <AnimatePresence>
+                    {isRoyaltyExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-5 pb-5">
+                          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg overflow-hidden border border-green-200 dark:border-green-800/50">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-green-100 dark:bg-green-900/30 border-b border-green-200 dark:border-green-800">
+                                  <th className="text-left px-4 py-2 font-semibold text-green-900 dark:text-green-100">Print Size</th>
+                                  <th className="text-right px-4 py-2 font-semibold text-green-900 dark:text-green-100">Customer Pays</th>
+                                  <th className="text-right px-4 py-2 font-semibold text-green-900 dark:text-green-100">You Earn (25%)</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {PRINT_SIZES_AND_PRICES.map((item, index) => (
+                                  <tr 
+                                    key={item.size} 
+                                    className={`border-b border-green-100 dark:border-green-900/30 ${
+                                      index % 2 === 0 ? 'bg-green-50/30 dark:bg-green-900/10' : ''
+                                    }`}
+                                  >
+                                    <td className="px-4 py-2.5 text-gray-900 dark:text-white font-medium">
+                                      {item.size}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
+                                      ${item.basePrice.toFixed(2)}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-bold">
+                                      ${item.yourRoyalty.toFixed(2)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          
+                          <div className="mt-3 text-xs text-green-800 dark:text-green-200 space-y-1">
+                            <p>💡 <strong>Example:</strong> If a customer orders your photo as a 24" × 16" print for $109.99, you earn $27.50</p>
+                            <p>📊 <strong>Multiple sales:</strong> One photo can be sold unlimited times across different sizes</p>
+                            <p>✅ <strong>Full transparency:</strong> Track every sale in your dashboard with complete details</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Error Message */}
@@ -332,135 +444,202 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
                   </div>
                 )}
 
-                {/* File Upload */}
+                {/* File Upload Area */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Photo <span className="text-red-500">*</span>
+                    Photos <span className="text-red-500">*</span>
                   </label>
                   
-                  {!preview ? (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-gray-300 dark:border-[#2a2a2a] rounded-xl p-12 text-center hover:border-[#ff6b35] hover:bg-[#ff6b35]/5 transition-all cursor-pointer"
-                    >
-                      <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
-                        Click to upload your photo
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        PNG, JPG up to 50MB
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-[#2a2a2a]">
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="w-full h-64 object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFile(null);
-                          setPreview('');
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }}
-                        className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 dark:border-[#2a2a2a] rounded-xl p-8 text-center hover:border-[#ff6b35] hover:bg-[#ff6b35]/5 transition-all cursor-pointer"
+                  >
+                    <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
+                      Click to select photos
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      PNG, JPG up to 50MB • Select multiple files
+                    </p>
+                  </div>
                   
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                   />
                 </div>
 
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Title <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Give your photo a descriptive title"
-                    className="w-full px-4 py-3 bg-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-[#2a2a2a] rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 transition-all outline-none"
-                  />
-                </div>
+                {/* Global Settings (when multiple files) */}
+                {files.length > 1 && (
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#2a2a2a] rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                      Apply to All Photos
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Category
+                        </label>
+                        <select
+                          value={globalCategory}
+                          onChange={(e) => {
+                            setGlobalCategory(e.target.value);
+                            setFiles((prev) => prev.map((f) => ({ ...f, category: e.target.value })));
+                          }}
+                          className="w-full px-3 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#2a2a2a] rounded-lg text-gray-900 dark:text-white focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 transition-all outline-none text-sm"
+                        >
+                          {CATEGORIES.map((cat) => (
+                            <option key={cat.value} value={cat.value}>
+                              {cat.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Tags
+                        </label>
+                        <input
+                          type="text"
+                          value={globalTags}
+                          onChange={(e) => {
+                            setGlobalTags(e.target.value);
+                            setFiles((prev) => prev.map((f) => ({ ...f, tags: e.target.value })));
+                          }}
+                          placeholder="sunset, beach, ocean"
+                          className="w-full px-3 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#2a2a2a] rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 transition-all outline-none text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe your photo, location, story behind it..."
-                    rows={3}
-                    className="w-full px-4 py-3 bg-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-[#2a2a2a] rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 transition-all outline-none resize-none"
-                  />
-                </div>
+                {/* Selected Files */}
+                {files.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      Selected Photos ({files.length})
+                    </h3>
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                      {files.map((file) => (
+                        <motion.div
+                          key={file.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className={`border rounded-lg p-3 ${
+                            file.status === 'error'
+                              ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10'
+                              : file.status === 'success'
+                              ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-900/10'
+                              : file.status === 'uploading'
+                              ? 'border-[#ff6b35] bg-[#ff6b35]/5'
+                              : 'border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#0a0a0a]'
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            {/* Preview */}
+                            <div className="flex-shrink-0">
+                              {file.preview ? (
+                                <img
+                                  src={file.preview}
+                                  alt={file.title}
+                                  className="w-20 h-20 object-cover rounded-lg"
+                                />
+                              ) : (
+                                <div className="w-20 h-20 bg-gray-200 dark:bg-[#2a2a2a] rounded-lg flex items-center justify-center">
+                                  <ImageIcon className="w-8 h-8 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
 
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Category <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-3 bg-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-[#2a2a2a] rounded-lg text-gray-900 dark:text-white focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 transition-all outline-none"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                            {/* Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <input
+                                  type="text"
+                                  value={file.title}
+                                  onChange={(e) => updateFile(file.id, { title: e.target.value })}
+                                  placeholder="Photo title"
+                                  disabled={uploading}
+                                  className="flex-1 px-2 py-1 bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#2a2a2a] rounded text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35]/20 transition-all outline-none disabled:opacity-50"
+                                />
+                                {!uploading && file.status !== 'success' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile(file.id)}
+                                    className="p-1.5 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
 
-                {/* Tags */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Tags
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tags}
-                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                    placeholder="sunset, beach, ocean (comma separated)"
-                    className="w-full px-4 py-3 bg-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-[#2a2a2a] rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:border-[#ff6b35] focus:ring-2 focus:ring-[#ff6b35]/20 transition-all outline-none"
-                  />
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Help customers find your photo with relevant tags
-                  </p>
-                </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                <span>{(file.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                <span>•</span>
+                                <span>{CATEGORIES.find((c) => c.value === file.category)?.label}</span>
+                              </div>
 
-                {/* Upload Progress */}
-                {loading && (
+                              {/* Status */}
+                              {file.status === 'uploading' && (
+                                <div className="mt-2">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">Uploading...</span>
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">{file.progress}%</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 dark:bg-[#2a2a2a] rounded-full h-1.5">
+                                    <motion.div
+                                      className="h-full bg-[#ff6b35] rounded-full"
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${file.progress}%` }}
+                                      transition={{ duration: 0.3 }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {file.status === 'success' && (
+                                <div className="flex items-center gap-1 mt-2 text-green-600 dark:text-green-400 text-xs">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>Uploaded successfully</span>
+                                </div>
+                              )}
+
+                              {file.status === 'error' && file.error && (
+                                <div className="flex items-center gap-1 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                  <AlertCircle className="w-4 h-4" />
+                                  <span>{file.error}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Progress Summary */}
+                {uploading && (
                   <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Uploading...
+                        Uploading photos...
                       </span>
                       <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {uploadProgress}%
+                        {completedUploads} / {files.length} complete
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-[#2a2a2a] rounded-full h-2 overflow-hidden">
                       <motion.div
                         className="h-full bg-[#ff6b35]"
                         initial={{ width: 0 }}
-                        animate={{ width: `${uploadProgress}%` }}
+                        animate={{ width: `${(completedUploads / files.length) * 100}%` }}
                         transition={{ duration: 0.3 }}
                       />
                     </div>
@@ -472,25 +651,25 @@ export function PhotoUploadModal({ onClose, onSuccess }: PhotoUploadModalProps) 
                   <button
                     type="button"
                     onClick={onClose}
-                    disabled={loading}
+                    disabled={uploading}
                     className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-[#2a2a2a] text-gray-700 dark:text-white rounded-lg hover:border-[#ff6b35] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={loading || !file}
+                    disabled={uploading || files.length === 0 || hasErrors}
                     className="flex-1 px-6 py-3 bg-[#ff6b35] text-white rounded-lg hover:bg-[#ff8555] transition-all shadow-lg shadow-[#ff6b35]/30 disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2"
                   >
-                    {loading ? (
+                    {uploading ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Uploading...
+                        Uploading {completedUploads}/{files.length}...
                       </>
                     ) : (
                       <>
                         <Upload className="w-5 h-5" />
-                        Upload Photo
+                        Upload {files.length} Photo{files.length === 1 ? '' : 's'}
                       </>
                     )}
                   </button>

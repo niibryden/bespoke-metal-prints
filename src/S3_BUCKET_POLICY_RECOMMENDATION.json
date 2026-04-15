@@ -1,0 +1,42 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadStockWebPhotos",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::bespoke-metal-prints-orders/stock/web/*"
+        },
+        {
+            "Sid": "PublicReadStockOriginalPhotos",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::bespoke-metal-prints-orders/stock/original/*"
+        },
+        {
+            "Sid": "PublicReadMarketplaceWeb",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::bespoke-metal-prints-orders/marketplace/*/web/*"
+        },
+        {
+            "Sid": "PublicReadMarketplaceOriginal",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::bespoke-metal-prints-orders/marketplace/*/original/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": [
+                        "https://sticky-erd-47651361.figma.site/*",
+                        "https://bespokemetalprints.com/*",
+                        "https://www.bespokemetalprints.com/*"
+                    ]
+                }
+            }
+        }
+    ]
+}

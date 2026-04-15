@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, ShoppingCart, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { FreeShippingProgress } from './FreeShippingProgress';
 
 interface CartModalProps {
   onClose: () => void;
@@ -134,6 +135,9 @@ export function CartModal({ onClose, onCheckout }: CartModalProps) {
         {items.length > 0 && (
           <div className="border-t border-gray-200 dark:border-[#2a2a2a] p-6 bg-gray-50 dark:bg-[#0a0a0a]">
             <div className="space-y-4">
+              {/* Free Shipping Progress */}
+              <FreeShippingProgress cartTotal={getTotalPrice()} threshold={100} />
+
               {/* Total */}
               <div className="flex items-center justify-between text-xl">
                 <span className="text-gray-900 dark:text-white">Total</span>

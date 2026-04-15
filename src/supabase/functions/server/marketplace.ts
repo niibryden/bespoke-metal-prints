@@ -255,16 +255,18 @@ async function addMarketplacePhotoToStockCollections(photo: any) {
     // Create stock photo format from marketplace photo
     const stockImage = {
       id: photo.id,
+      name: photo.title, // Primary name field
       url: photo.webUrl || photo.s3Url, // Use web URL for display
       originalUrl: photo.s3Url, // Store original URL for high-res printing
+      source: 'marketplace', // Mark as marketplace photo
       title: photo.title,
       description: photo.description || '',
       tags: photo.tags || [],
       photographerId: photo.photographerId,
       photographerName: photo.photographerName,
-      isMarketplacePhoto: true, // Flag to identify marketplace photos
       royaltyRate: photo.photographerRoyalty,
-      name: photo.title, // Add 'name' field for compatibility with stock photos
+      uploadedAt: photo.submittedAt || new Date().toISOString(),
+      isMarketplacePhoto: true, // Legacy flag for backward compatibility
     };
     
     // Add image to collection if not already present
@@ -296,6 +298,15 @@ app.get("/make-server-3e3a9cd7/marketplace/photographer/check", async (c) => {
     
     if (!profile) {
       return c.json({ isPhotographer: false }, 404);
+    }
+    
+    // Check if photographer is suspended
+    if (profile.status === 'suspended') {
+      return c.json({ 
+        error: 'Account suspended', 
+        suspended: true,
+        message: 'Your photographer account has been suspended. Please contact support for assistance.'
+      }, 403);
     }
     
     return c.json({ isPhotographer: true, profile });
@@ -946,6 +957,37 @@ app.get("/make-server-3e3a9cd7/marketplace/admin/pending-photos", async (c) => {
   }
 });
 
+// Get approved photos (admin only)
+app.get("/make-server-3e3a9cd7/marketplace/admin/approved-photos", async (c) => {
+  try {
+    const adminEmail = c.req.header('X-Admin-Email');
+    if (!adminEmail) {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+    
+    const approvedIds = await kv.get('marketplace:photos:approved') || [];
+    console.log(`📋 Found ${approvedIds.length} approved photo IDs`);
+    
+    const photos = await Promise.all(
+      approvedIds.map(async (id: string) => {
+        const photo = await kv.get(`marketplace:photo:${id}`);
+        if (!photo) {
+          console.warn(`⚠️ Approved photo ${id} not found in database`);
+        }
+        return photo;
+      })
+    );
+    
+    const validPhotos = photos.filter(Boolean);
+    console.log(`✅ Returning ${validPhotos.length} approved photos`);
+    
+    return c.json({ photos: validPhotos });
+  } catch (error: any) {
+    console.error('❌ Error fetching approved photos:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 // Approve/reject photo (admin only)
 app.put("/make-server-3e3a9cd7/marketplace/admin/photo/:id/status", async (c) => {
   try {
@@ -1013,14 +1055,85 @@ app.get("/make-server-3e3a9cd7/marketplace/admin/photographers", async (c) => {
       return c.json({ error: 'Admin access required' }, 403);
     }
     
-    const photographerIds = await kv.get('photographer:ids') || [];
-    const profiles = await Promise.all(
-      photographerIds.map((id: string) => kv.get(`photographer:profile:${id}`))
+    // Get all photographer profiles using prefix search
+    const profiles = await kv.getByPrefix('photographer:profile:');
+    
+    // Enrich with stats
+    const enrichedProfiles = await Promise.all(
+      profiles.map(async (profile: any) => {
+        // Get photographer's photos
+        const photoIds = await kv.get(`photographer:photos:${profile.id}`) || [];
+        const photos = await Promise.all(
+          photoIds.map((id: string) => kv.get(`marketplace:photo:${id}`))
+        );
+        
+        const validPhotos = photos.filter(Boolean);
+        const approvedPhotos = validPhotos.filter((p: any) => p.status === 'approved');
+        
+        // Calculate total sales and earnings
+        const totalSales = approvedPhotos.reduce((sum: number, p: any) => sum + (p.sales || 0), 0);
+        const totalEarnings = approvedPhotos.reduce((sum: number, p: any) => sum + (p.earnings || 0), 0);
+        
+        return {
+          ...profile,
+          totalPhotos: validPhotos.length,
+          totalSales,
+          totalEarnings,
+          status: profile.status || 'active', // Default to active if not set
+        };
+      })
     );
     
-    return c.json({ photographers: profiles.filter(Boolean) });
+    console.log(`✅ Fetched ${enrichedProfiles.length} photographers for admin`);
+    
+    return c.json({ photographers: enrichedProfiles });
   } catch (error: any) {
     console.error('❌ Error fetching all photographers:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Admin: Update photographer status (suspend/reactivate)
+app.put("/make-server-3e3a9cd7/marketplace/admin/photographers/:photographerId/status", async (c) => {
+  try {
+    const adminEmail = c.req.header('X-Admin-Email');
+    if (!adminEmail) {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+    
+    const photographerId = c.req.param('photographerId');
+    const { status } = await c.req.json();
+    
+    if (!['active', 'suspended'].includes(status)) {
+      return c.json({ error: 'Invalid status. Must be "active" or "suspended"' }, 400);
+    }
+    
+    // Get photographer profile
+    const profile = await kv.get(`photographer:profile:${photographerId}`);
+    if (!profile) {
+      return c.json({ error: 'Photographer not found' }, 404);
+    }
+    
+    // Update status
+    const updatedProfile = {
+      ...profile,
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    await kv.set(`photographer:profile:${photographerId}`, updatedProfile);
+    
+    console.log(`✅ Photographer ${photographerId} status updated to ${status} by admin ${adminEmail}`);
+    
+    return c.json({ 
+      success: true, 
+      photographer: updatedProfile,
+      message: status === 'suspended' 
+        ? 'Photographer access has been suspended' 
+        : 'Photographer access has been restored'
+    });
+  } catch (error: any) {
+    console.error('❌ Error updating photographer status:', error);
     return c.json({ error: error.message }, 500);
   }
 });

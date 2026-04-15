@@ -35,9 +35,10 @@ interface PendingPhoto {
 }
 
 export function AdminMarketplaceApprovals({ adminEmail }: AdminMarketplaceApprovalsProps) {
-  const [activeTab, setActiveTab] = useState<'photographers' | 'photos'>('photographers');
+  const [activeTab, setActiveTab] = useState<'photographers' | 'photos' | 'approved'>('photographers');
   const [pendingPhotographers, setPendingPhotographers] = useState<PendingPhotographer[]>([]);
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
+  const [approvedPhotos, setApprovedPhotos] = useState<PendingPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -45,6 +46,13 @@ export function AdminMarketplaceApprovals({ adminEmail }: AdminMarketplaceApprov
   useEffect(() => {
     loadPendingItems();
   }, []);
+
+  useEffect(() => {
+    // Load approved photos when switching to approved tab
+    if (activeTab === 'approved' && approvedPhotos.length === 0) {
+      loadApprovedPhotos();
+    }
+  }, [activeTab]);
 
   const loadPendingItems = async () => {
     setLoading(true);
@@ -93,6 +101,32 @@ export function AdminMarketplaceApprovals({ adminEmail }: AdminMarketplaceApprov
     } catch (err: any) {
       console.error('❌ Failed to load pending items:', err);
       setError(err.message || 'Failed to load pending items');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadApprovedPhotos = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // Load approved photos
+      console.log('🔄 Loading approved photos from:', `${getServerUrl()}/marketplace/admin/approved-photos`);
+      const photosResponse = await fetch(`${getServerUrl()}/marketplace/admin/approved-photos`, {
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'X-Admin-Email': adminEmail,
+        },
+      });
+
+      if (photosResponse.ok) {
+        const photosData = await photosResponse.json();
+        setApprovedPhotos(photosData.photos || []);
+      }
+    } catch (err: any) {
+      console.error('❌ Failed to load approved photos:', err);
+      setError(err.message || 'Failed to load approved photos');
     } finally {
       setLoading(false);
     }
@@ -342,6 +376,28 @@ ${profiles || 'No profiles found'}
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#ff6b35]" />
           )}
         </button>
+
+        <button
+          onClick={() => setActiveTab('approved')}
+          className={`px-4 py-2 font-medium transition-all relative ${
+            activeTab === 'approved'
+              ? 'text-[#ff6b35]'
+              : 'text-gray-400 [data-theme=light]_&:text-gray-600 hover:text-white [data-theme=light]_&:hover:text-gray-900'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Approved
+            {approvedPhotos.length > 0 && (
+              <span className="px-2 py-0.5 bg-[#ff6b35] text-white text-xs font-semibold rounded-full">
+                {approvedPhotos.length}
+              </span>
+            )}
+          </div>
+          {activeTab === 'approved' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#ff6b35]" />
+          )}
+        </button>
       </div>
 
       {/* Content */}
@@ -532,7 +588,7 @@ ${profiles || 'No profiles found'}
             ))
           )}
         </div>
-      ) : (
+      ) : activeTab === 'photos' ? (
         <div className="space-y-4">
           {pendingPhotos.length === 0 ? (
             <div className="text-center py-16 bg-[#1a1a1a] [data-theme=light]_&:bg-gray-50 rounded-xl border-2 border-dashed border-[#2a2a2a] [data-theme=light]_&:border-gray-300">
@@ -629,6 +685,74 @@ ${profiles || 'No profiles found'}
                         <XCircle className="w-4 h-4" />
                         Reject
                       </button>
+                    </div>
+
+                    <p className="text-xs text-gray-500 [data-theme=light]_&:text-gray-400 mt-2">
+                      Uploaded: {new Date(photo.uploadDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {approvedPhotos.length === 0 ? (
+            <div className="text-center py-16 bg-[#1a1a1a] [data-theme=light]_&:bg-gray-50 rounded-xl border-2 border-dashed border-[#2a2a2a] [data-theme=light]_&:border-gray-300">
+              <CheckCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white [data-theme=light]_&:text-gray-900 mb-2">
+                No Approved Photos
+              </h3>
+              <p className="text-gray-400 [data-theme=light]_&:text-gray-600">
+                No photos have been approved yet
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {approvedPhotos.map((photo) => (
+                <motion.div
+                  key={photo.id}
+                  className="bg-[#1a1a1a] [data-theme=light]_&:bg-white border border-[#2a2a2a] [data-theme=light]_&:border-gray-200 rounded-xl overflow-hidden"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  <div className="aspect-square relative bg-[#0a0a0a] [data-theme=light]_&:bg-gray-100">
+                    <ImageWithFallback
+                      src={photo.s3Url}
+                      alt={photo.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 right-3 px-2 py-1 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Approved
+                    </div>
+                  </div>
+
+                  <div className="p-4">
+                    <h3 className="font-semibold text-white [data-theme=light]_&:text-gray-900 mb-1">
+                      {photo.title}
+                    </h3>
+                    <p className="text-sm text-gray-400 [data-theme=light]_&:text-gray-600 mb-2 flex items-center gap-1">
+                      <Camera className="w-3 h-3" />
+                      by {photo.photographerName}
+                    </p>
+
+                    {photo.description && (
+                      <p className="text-sm text-gray-300 [data-theme=light]_&:text-gray-700 mb-3 line-clamp-2">
+                        {photo.description}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {photo.tags.slice(0, 3).map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-0.5 bg-[#2a2a2a] [data-theme=light]_&:bg-gray-100 text-gray-400 [data-theme=light]_&:text-gray-600 rounded text-xs"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
                     </div>
 
                     <p className="text-xs text-gray-500 [data-theme=light]_&:text-gray-400 mt-2">

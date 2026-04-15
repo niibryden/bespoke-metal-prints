@@ -90,6 +90,13 @@ export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       
       console.log('✅ Valid JWT token received, length:', token.length);
       console.log('✅ Token preview:', token.substring(0, 30) + '...');
+      
+      // CRITICAL: Convert expires_at from seconds to milliseconds
+      const expiresAtMs = data.expires_at ? data.expires_at * 1000 : undefined;
+      if (expiresAtMs) {
+        console.log('🕐 Token expiration (from server):', new Date(expiresAtMs).toLocaleString());
+        console.log('🕐 Time until expiry:', Math.floor((expiresAtMs - Date.now()) / 1000 / 60), 'minutes');
+      }
 
       // Pass admin info and permissions to parent
       onLogin({
@@ -102,6 +109,8 @@ export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
           canExportData: true,
         },
         accessToken: token,
+        refreshToken: data.refresh_token, // Store refresh token for automatic refresh
+        expiresAt: expiresAtMs, // Already converted to milliseconds
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';

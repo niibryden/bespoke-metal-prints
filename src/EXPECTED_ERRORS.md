@@ -1,4 +1,22 @@
-# 🚨 THESE ERRORS ARE EXPECTED
+# 🚨 THESE ERRORS ARE EXPECTED (OR FIXED)
+
+## ✅ RECENTLY FIXED: Auth Lock Errors
+
+### ~~❌ Supabase Auth Lock Timeout~~ → ✅ FIXED
+```
+Lock "lock:sb-auth-token" was not released within 5000ms
+```
+**Status**: **COMPLETELY FIXED** as of January 2026
+
+**What was done**:
+- Enhanced Supabase client singleton with better lock handling
+- Fixed all auth state listeners to properly cleanup
+- Added React Strict Mode protection
+- Created centralized auth management utilities
+
+**Details**: See `/AUTH_LOCK_FIX_COMPREHENSIVE.md` and `/AUTH_LOCK_FIX_SUMMARY.md`
+
+---
 
 ## Current Situation
 
@@ -233,6 +251,7 @@ The backend is physically overloaded with data. No amount of code changes will f
 
 | Issue | Status | Action Needed |
 |-------|--------|---------------|
+| Auth Lock Timeout | ✅ FIXED | None |
 | Service Worker Error | ✅ FIXED | None |
 | Statement Timeout | 🔴 BLOCKED | Run SQL cleanup |
 | Cloudflare 522 | 🔴 BLOCKED | Run SQL cleanup |

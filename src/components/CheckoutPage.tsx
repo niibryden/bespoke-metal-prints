@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Package, MapPin, CheckCircle, ArrowLeft, Loader2, Gift, UserPlus, LogIn, MessageSquare } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -75,6 +75,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
   const [giftRecipientEmail, setGiftRecipientEmail] = useState('');
   
   const supabase = useMemo(() => getSupabaseClient(), []);
+  const authInitialized = useRef(false); // Prevent double initialization in React Strict Mode
   
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -194,6 +195,12 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
   
   // Get user session and auto-fill email
   useEffect(() => {
+    // Prevent double initialization in React Strict Mode
+    if (authInitialized.current) {
+      return;
+    }
+    authInitialized.current = true;
+    
     const getUserSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -219,29 +226,14 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
     };
     getUserSession();
     
-    // Listen for auth state changes (e.g., when user signs in/up via AuthModal)
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('✅ User signed in, auto-proceeding to shipping');
-        setIsLoggedIn(true);
-        setShippingAddress(prev => ({
-          ...prev,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || prev.name,
-        }));
-        
-        // Auto-proceed to shipping when user signs in during checkout
-        if (step === 'auth') {
-          setStep('shipping');
-          setShowAuthModal(false);
-        }
-      }
-    });
+    // Note: Auth subscription is handled globally in App.tsx
+    // Individual components should not create their own subscriptions
+    // This prevents auth lock errors from multiple concurrent subscriptions
     
     return () => {
-      authListener?.subscription?.unsubscribe();
+      authInitialized.current = false; // Reset on unmount
     };
-  }, [supabase, step]);
+  }, [step]); // Removed supabase from dependencies to prevent re-subscription
   
   // Sync billing address with shipping address when useSameAddress is true
   useEffect(() => {

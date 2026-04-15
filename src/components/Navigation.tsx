@@ -1,3 +1,5 @@
+import { getSupabaseClient } from '../utils/supabase/client';
+import { safeGetSession, safeSignOut } from '../utils/supabase/auth-manager';
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sun, Moon, User, Menu, X, LogOut, Settings, ShoppingCart, ChevronDown, BookOpen, Ruler, HelpCircle } from 'lucide-react';
@@ -8,7 +10,6 @@ import { AccessibilitySettings } from './AccessibilitySettings';
 import { CartModal } from './CartModal';
 import { DarkModeToggleSwap } from './DarkModeToggle';
 import { useCart } from '../contexts/CartContext';
-import { getSupabaseClient } from '../utils/supabase/client';
 import logo from 'figma:asset/b87a44ea706a718f76149582796ccaf613512b6f.png';
 
 interface NavigationProps {
@@ -79,7 +80,7 @@ export function Navigation({
         console.log('User inactive for 30 minutes, signing out...');
         setIsSigningOut(true);
         try {
-          await supabase.auth.signOut();
+          await safeSignOut();
           setUser(null);
           setShowAccount(false);
           alert('You have been signed out due to inactivity.');
@@ -122,28 +123,25 @@ export function Navigation({
   }, []);
 
   useEffect(() => {
-    // Check for existing session
+    // Check for existing session once on mount
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await safeGetSession();
       if (session) {
         setUser(session.user);
       }
     };
 
     checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
+    
+    // Note: Auth subscription is handled globally in App.tsx
+    // Individual components should not create their own subscriptions
+    // This prevents auth lock errors from multiple concurrent subscriptions
   }, [supabase]);
 
   const handleSignOut = async () => {
     if (isSigningOut) return; // Prevent concurrent signOut calls
     setIsSigningOut(true);
-    await supabase.auth.signOut();
+    await safeSignOut();
     setUser(null);
     setIsMobileMenuOpen(false);
     setShowAccount(false); // Close account modal on sign out

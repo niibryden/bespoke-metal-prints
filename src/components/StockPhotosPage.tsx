@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, ImageIcon, ChevronRight, Search, Grid3x3, Grid2x2, Printer, Loader2, CheckCircle } from 'lucide-react';
+import { X, ImageIcon, ChevronRight, Search, Grid3x3, Grid2x2, Printer, Loader2, CheckCircle, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
@@ -33,6 +33,8 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
   const [hoveredCollection, setHoveredCollection] = useState<string | null>(null);
   const [loadingImageId, setLoadingImageId] = useState<string | null>(null);
   const [successImageId, setSuccessImageId] = useState<string | null>(null);
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<any | null>(null);
 
   useEffect(() => {
     // Fetch actual collections from backend
@@ -120,14 +122,8 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
   };
 
   const handleCategoryClick = (collection: Collection) => {
-    if (onSelectCollection) {
-      // Convert to the expected format
-      onSelectCollection({
-        id: 0, // Will be ignored
-        title: collection.name,
-        description: collection.description || `${collection.photoCount} photos available`,
-      });
-    }
+    // Open the collection to view individual photos
+    setSelectedCollection(collection);
   };
 
   const handleQuickPrint = (collection: Collection, event: React.MouseEvent) => {
@@ -156,6 +152,167 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
   };
 
   const totalPhotos = collections.reduce((sum, col) => sum + col.photoCount, 0);
+
+  // If a collection is selected, show the individual photos view
+  if (selectedCollection) {
+    return (
+      <motion.div
+        className="fixed inset-0 z-[9999] bg-white dark:bg-[#0a0a0a] overflow-y-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md border-b border-gray-200 dark:border-[#ff6b35]/20 shadow-lg">
+          <div className="container mx-auto px-4 sm:px-6 py-4">
+            <div className="flex items-center justify-between mb-4">
+              {/* Breadcrumb */}
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <button 
+                  onClick={() => setSelectedCollection(null)}
+                  className="hover:text-[#ff6b35] transition-colors"
+                >
+                  Our Stock Photos
+                </button>
+                <ChevronRight className="w-4 h-4" />
+                <span className="text-gray-700 dark:text-white font-medium">{selectedCollection.name}</span>
+              </div>
+              
+              {/* Close button */}
+              <motion.button
+                onClick={onClose}
+                className="p-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <X className="w-6 h-6" />
+              </motion.button>
+            </div>
+          </div>
+        </div>
+
+        {/* Collection Photos Grid */}
+        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          {/* Collection Header */}
+          <motion.div
+            className="text-center max-w-3xl mx-auto mb-8 sm:mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1 className="text-3xl sm:text-4xl md:text-5xl text-gray-900 dark:text-white mb-4">
+              {selectedCollection.name}
+            </h1>
+            {selectedCollection.description && (
+              <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
+                {selectedCollection.description}
+              </p>
+            )}
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#ff6b35]" />
+              <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-gray-900 dark:text-white font-semibold">{selectedCollection.photoCount}</span> Photo{selectedCollection.photoCount !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </motion.div>
+
+          {/* Photos Grid */}
+          {selectedCollection.photos && selectedCollection.photos.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <AnimatePresence mode="popLayout">
+                {selectedCollection.photos.map((photo: any, index: number) => (
+                  <motion.div
+                    key={photo.id || index}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3, delay: index * 0.02 }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="relative rounded-xl overflow-hidden aspect-square border-2 border-transparent hover:border-[#ff6b35] transition-all duration-300 shadow-lg hover:shadow-[#ff6b35]/20 hover:shadow-2xl hover:-translate-y-1">
+                      <ImageWithFallback
+                        src={photo.url}
+                        alt={photo.title || `Photo ${index + 1}`}
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                      />
+                      
+                      {/* Overlay on hover with two buttons */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <div className="flex gap-2">
+                            {/* Preview Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewPhoto(photo);
+                              }}
+                              className="flex-1 py-1.5 px-2 bg-[#ff6b35] hover:bg-[#ff8555] text-white rounded-md font-medium transition-all flex items-center justify-center gap-1.5 shadow-lg text-xs"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5" />
+                              <span>Preview</span>
+                            </button>
+                            
+                            {/* Print Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onSelectImage) {
+                                  console.log('Quick print photo:', photo.url);
+                                  onSelectImage(photo.url);
+                                }
+                              }}
+                              className="flex-1 py-1.5 px-2 bg-[#ff6b35] hover:bg-[#ff8555] text-white rounded-md font-medium transition-all flex items-center justify-center gap-1.5 shadow-lg text-xs"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span>Print</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Photo title */}
+                    {photo.title && (
+                      <p className="mt-2 text-sm text-gray-700 dark:text-gray-300 line-clamp-1">
+                        {photo.title}
+                      </p>
+                    )}
+                    
+                    {/* Photographer attribution for marketplace photos */}
+                    {photo.isMarketplacePhoto && photo.photographerName && (
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <Camera className="w-3 h-3" />
+                        <span>by {photo.photographerName}</span>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-[#1a1a1a] flex items-center justify-center mx-auto mb-6">
+                <ImageIcon className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl text-gray-900 dark:text-white mb-2">
+                No photos in this collection yet
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Check back soon for new additions!
+              </p>
+              <button
+                onClick={() => setSelectedCollection(null)}
+                className="px-6 py-3 bg-[#ff6b35] text-white rounded-lg hover:bg-[#ff8555] transition-colors font-medium"
+              >
+                Back to Collections
+              </button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
 
   if (loading) {
     return (
@@ -292,7 +449,7 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
           </h1>
           
           <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
-            Explore our curated collection of professional photography and digital art.
+            Explore our curated collection of professional photography and digital art from our library and talented photographers.
           </p>
           
           {/* Quick Print Helper */}
@@ -548,6 +705,122 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
           </>
         )}
       </div>
+
+      {/* Photo Preview Modal */}
+      <AnimatePresence>
+        {previewPhoto && (
+          <motion.div
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewPhoto(null)}
+          >
+            <motion.div
+              className="relative max-w-5xl w-full bg-white dark:bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setPreviewPhoto(null)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="flex flex-col md:flex-row">
+                {/* Photo */}
+                <div className="relative md:w-2/3 bg-gray-100 dark:bg-black">
+                  <div className="aspect-square md:aspect-auto md:h-full flex items-center justify-center">
+                    <ImageWithFallback
+                      src={previewPhoto.url}
+                      alt={previewPhoto.title || 'Preview'}
+                      className="max-h-[60vh] md:max-h-[80vh] w-full object-contain"
+                    />
+                  </div>
+                </div>
+
+                {/* Details sidebar */}
+                <div className="md:w-1/3 p-6 flex flex-col">
+                  {/* Title */}
+                  {previewPhoto.title && (
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      {previewPhoto.title}
+                    </h2>
+                  )}
+
+                  {/* Photographer attribution */}
+                  {previewPhoto.isMarketplacePhoto && previewPhoto.photographerName && (
+                    <div className="flex items-center gap-2 mb-4 text-gray-600 dark:text-gray-400">
+                      <Camera className="w-4 h-4" />
+                      <span className="text-sm">by <strong>{previewPhoto.photographerName}</strong></span>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  {previewPhoto.description && (
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      {previewPhoto.description}
+                    </p>
+                  )}
+
+                  {/* Tags */}
+                  {previewPhoto.tags && previewPhoto.tags.length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {previewPhoto.tags.map((tag: string, i: number) => (
+                          <span
+                            key={i}
+                            className="px-3 py-1 bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 rounded-full text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Spacer */}
+                  <div className="flex-1" />
+
+                  {/* Action buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => {
+                        if (onSelectImage) {
+                          console.log('Preview: Printing photo:', previewPhoto.url);
+                          onSelectImage(previewPhoto.url);
+                          setPreviewPhoto(null);
+                        }
+                      }}
+                      className="w-full py-4 bg-[#ff6b35] hover:bg-[#ff8555] text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                    >
+                      <Printer className="w-5 h-5" />
+                      Print This Photo
+                    </button>
+
+                    <button
+                      onClick={() => setPreviewPhoto(null)}
+                      className="w-full py-3 bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#3a3a3a] text-gray-700 dark:text-white rounded-lg font-medium transition-all"
+                    >
+                      Close Preview
+                    </button>
+                  </div>
+
+                  {/* Download protection notice */}
+                  <p className="mt-4 text-xs text-center text-gray-500 dark:text-gray-400">
+                    🔒 Protected image - Print to order
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

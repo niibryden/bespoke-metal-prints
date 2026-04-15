@@ -3,9 +3,26 @@ import { Instagram, Facebook, MapPin, Mail, Globe, Phone } from 'lucide-react';
 interface FooterProps {
   onAdminClick?: () => void;
   onMarketplaceClick?: () => void;
+  onPhotographerClick?: () => void;
+  onTermsClick?: () => void;
+  onRefundPolicyClick?: () => void;
+  onShippingPolicyClick?: () => void;
+  onPrivacyPolicyClick?: () => void;
+  onMetalPrintsExplainedClick?: () => void;
+  onMetalPrintsVsCanvasClick?: () => void;
 }
 
-export function Footer({ onAdminClick, onMarketplaceClick }: FooterProps) {
+export function Footer({ 
+  onAdminClick, 
+  onMarketplaceClick,
+  onPhotographerClick,
+  onTermsClick,
+  onRefundPolicyClick,
+  onShippingPolicyClick,
+  onPrivacyPolicyClick,
+  onMetalPrintsExplainedClick,
+  onMetalPrintsVsCanvasClick,
+}: FooterProps) {
   return (
     <footer id="contact" className="bg-white text-black py-8 md:py-12 border-t border-[#ff6b35]/20 dark:bg-black dark:text-white">
       <div className="container mx-auto px-4 sm:px-6">
@@ -92,42 +109,60 @@ export function Footer({ onAdminClick, onMarketplaceClick }: FooterProps) {
         <div className="border-t border-[#ff6b35]/20 mt-6 md:mt-8 pt-6 md:pt-8 text-center text-gray-600 text-xs md:text-sm dark:text-gray-400">
           {/* Policy Links */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mb-4 md:mb-6">
-            <a 
-              href="?page=terms-conditions" 
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (onTermsClick) onTermsClick();
+              }}
               className="text-gray-600 hover:text-[#ff6b35] transition-colors dark:text-gray-400"
             >
               Terms & Conditions
-            </a>
-            <a 
-              href="?page=refund-policy" 
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (onRefundPolicyClick) onRefundPolicyClick();
+              }}
               className="text-gray-600 hover:text-[#ff6b35] transition-colors dark:text-gray-400"
             >
               Refund & Cancellation Policy
-            </a>
-            <a 
-              href="?page=shipping-policy" 
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (onShippingPolicyClick) onShippingPolicyClick();
+              }}
               className="text-gray-600 hover:text-[#ff6b35] transition-colors dark:text-gray-400"
             >
               Shipping Policy
-            </a>
-            <a 
-              href="?page=privacy-policy"
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (onPrivacyPolicyClick) onPrivacyPolicyClick();
+              }}
               className="text-gray-600 hover:text-[#ff6b35] transition-colors dark:text-gray-400"
             >
               Privacy Policy
-            </a>
-            <a 
-              href="?page=metal-prints-explained" 
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (onMetalPrintsExplainedClick) onMetalPrintsExplainedClick();
+              }}
               className="text-gray-600 hover:text-[#ff6b35] transition-colors dark:text-gray-400"
             >
               Metal Prints Explained
-            </a>
-            <a 
-              href="?page=metal-prints-vs-canvas" 
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (onMetalPrintsVsCanvasClick) onMetalPrintsVsCanvasClick();
+              }}
               className="text-gray-600 hover:text-[#ff6b35] transition-colors dark:text-gray-400"
             >
               Metal Prints vs Canvas
-            </a>
+            </button>
             {onMarketplaceClick && (
               <button
                 onClick={onMarketplaceClick}
@@ -142,6 +177,14 @@ export function Footer({ onAdminClick, onMarketplaceClick }: FooterProps) {
                 className="text-gray-500 hover:text-[#ff6b35] transition-colors opacity-50 hover:opacity-100"
               >
                 Admin
+              </button>
+            )}
+            {onPhotographerClick && (
+              <button
+                onClick={onPhotographerClick}
+                className="text-gray-500 hover:text-[#ff6b35] transition-colors opacity-50 hover:opacity-100"
+              >
+                Photographer
               </button>
             )}
           </div>

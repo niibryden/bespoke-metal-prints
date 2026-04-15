@@ -664,4 +664,50 @@ customerApp.get('/make-server-3e3a9cd7/collections', async (c) => {
   }
 });
 
+// Get photos from a specific collection (public endpoint)
+customerApp.get('/make-server-3e3a9cd7/stock-photos/:collectionName', async (c) => {
+  try {
+    const collectionName = c.req.param('collectionName');
+    console.log(`📸 Fetching photos for collection: "${collectionName}"`);
+    
+    const collections = await kv.get('stock:collections') || [];
+    
+    // Find the requested collection
+    const collection = collections.find((col: any) => col.name === collectionName);
+    
+    if (!collection) {
+      console.log(`❌ Collection not found: "${collectionName}"`);
+      return c.json({ error: 'Collection not found' }, 404);
+    }
+    
+    console.log(`✅ Found collection with ${collection.images?.length || 0} images`);
+    
+    // Map images to photos format expected by frontend
+    const photos = (collection.images || []).map((img: any) => ({
+      id: img.id,
+      url: img.url,
+      originalUrl: img.originalUrl || img.url,
+      s3Key: img.s3Key || '',
+      fileName: img.name || img.title || '',
+      uploadDate: img.uploadedAt || img.uploadDate || new Date().toISOString(),
+      photographerId: img.photographerId,
+      photographerName: img.photographerName,
+      isMarketplacePhoto: img.isMarketplacePhoto || false,
+      royaltyRate: img.royaltyRate,
+      title: img.title || img.name || '',
+      description: img.description || '',
+      tags: img.tags || [],
+    }));
+    
+    console.log(`📷 Returning ${photos.length} photos from collection "${collectionName}"`);
+    return c.json({ photos });
+  } catch (error: any) {
+    console.error('❌ Failed to fetch photos for collection:', error);
+    return c.json({ 
+      error: 'Failed to fetch photos',
+      details: error.message
+    }, 500);
+  }
+});
+
 export default customerApp;

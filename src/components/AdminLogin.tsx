@@ -9,7 +9,15 @@ function getServerUrl() {
 }
 
 interface AdminLoginProps {
-  onLogin: (adminInfo: { email: string; role: string; name: string; permissions: any; accessToken: string }) => void;
+  onLogin: (adminInfo: { 
+    email: string; 
+    role: string; 
+    name: string; 
+    permissions: any; 
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt?: number;
+  }) => void;
   onBack: () => void;
 }
 
@@ -67,7 +75,14 @@ export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        // Check if we need to bootstrap (no admin users exist)
+        if (data.needsBootstrap) {
+          setError('No admin users exist. Please create the first admin account using the bootstrap process.');
+          // Could also redirect to bootstrap page here if desired
+        } else {
+          throw new Error(data.error || 'Login failed');
+        }
+        return;
       }
 
       // Check if this was a reset operation
@@ -196,8 +211,13 @@ export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
 
             {/* Error message */}
             {error && (
-              <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-red-500 text-sm">
-                {error}
+              <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-sm">
+                <p className="text-red-500 mb-2">{error}</p>
+                {error.includes('bootstrap') && (
+                  <p className="text-gray-400 [data-theme='light']_&:text-gray-600">
+                    Visit <span className="text-[#ff6b35] font-medium">/admin/bootstrap</span> to create your first admin account.
+                  </p>
+                )}
               </div>
             )}
 

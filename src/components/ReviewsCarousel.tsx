@@ -23,8 +23,6 @@ export function ReviewsCarousel() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  const serverUrl = getServerUrl();
-
   // Fetch testimonials from backend
   useEffect(() => {
     fetchTestimonials();
@@ -32,6 +30,7 @@ export function ReviewsCarousel() {
 
   const fetchTestimonials = async () => {
     try {
+      const serverUrl = getServerUrl();
       // Add cache-busting parameter to ensure we get fresh data
       const url = `${serverUrl}/testimonials?_t=${Date.now()}`;
       console.log('🔄 Fetching testimonials from:', url);
@@ -66,6 +65,7 @@ export function ReviewsCarousel() {
       }
     } catch (error) {
       console.error('Failed to fetch testimonials:', error);
+      console.log('⚠️ Using fallback reviews due to fetch error');
       // Fallback to sample data on error
       setReviews(FALLBACK_REVIEWS);
     } finally {

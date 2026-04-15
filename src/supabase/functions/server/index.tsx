@@ -113,449 +113,45 @@ app.get("/make-server-3e3a9cd7/stripe-config", (c) => {
   return c.json({ publishableKey });
 });
 
-// Public endpoint to get stock photo collections (for Stock Photos page)
-app.get("/make-server-3e3a9cd7/collections", async (c) => {
-  try {
-    const collections = await kv.get('stock:collections') || [];
-    
-    // Transform collections to public format with only web-optimized images
-    const publicCollections = await Promise.all(collections.map(async (col: any, index: number) => {
-      // Filter to include web-optimized images (faster loading)
-      // Admin photos: filename contains '-web.' (not '-original.')
-      // Marketplace photos: path contains '/web/' (not '/original/')
-      const webImages = (col.images || []).filter((img: any) => {
-        const url = img.url || '';
-        return url.includes('-web.') || url.includes('/web/') || 
-               (!url.includes('-original.') && !url.includes('/original/'));
-      });
-      
-      // Generate signed URLs for marketplace photos or images in private paths
-      const photosWithUrls = [];
-      for (const img of webImages) {
-        let imageUrl = img.url;
-        
-        // If it's a marketplace photo or in a private path (contains '/original/'), use signed URL
-        if (img.isMarketplacePhoto || img.url.includes('/original/') || img.url.includes('marketplace')) {
-          try {
-            imageUrl = await generateSignedUrl(img.url);
-          } catch (err) {
-            console.warn('Failed to generate signed URL for:', img.url.substring(0, 50), err);
-            // Skip this image if we can't generate a signed URL (likely doesn't exist)
-            continue;
-          }
-        }
-        
-        photosWithUrls.push({
-          id: img.id,
-          url: imageUrl,
-          name: img.name || img.title
-        });
-      }
-      
-      return {
-        id: col.id || `col_${index}`, // Generate ID if missing
-        title: col.name,
-        description: col.description || '',
-        photos: photosWithUrls,
-        hidden: col.hidden || false
-      };
-    }));
-    
-    return c.json(publicCollections);
-  } catch (error: any) {
-    console.error('Failed to fetch collections for public:', error);
-    return c.json({ error: 'Failed to fetch collections' }, 500);
-  }
-});
-
-// Public endpoint to get photos from a specific collection
-app.get("/make-server-3e3a9cd7/stock-photos/:collectionName", async (c) => {
-  try {
-    const collectionName = c.req.param('collectionName');
-    console.log(`📸 Fetching photos for collection: "${collectionName}"`);
-    const collections = await kv.get('stock:collections') || [];
-    
-    // Find the requested collection
-    const collection = collections.find((col: any) => col.name === collectionName);
-    
-    if (!collection) {
-      console.log(`❌ Collection not found: "${collectionName}"`);
-      return c.json({ error: 'Collection not found' }, 404);
-    }
-    
-    console.log(`✅ Found collection with ${collection.images?.length || 0} images`);
-    
-    // Transform photos with signed URLs for marketplace photos
-    const photos = [];
-    
-    for (const img of (collection.images || [])) {
-      console.log(`\n🔍 Processing image: ${img.id}`);
-      console.log(`   - isMarketplacePhoto: ${img.isMarketplacePhoto}`);
-      console.log(`   - url: ${img.url?.substring(0, 80)}...`);
-      console.log(`   - originalUrl: ${img.originalUrl?.substring(0, 80)}...`);
-      
-      // For marketplace photos, ALWAYS use originalUrl (high-res for printing)
-      let imageUrl;
-      
-      if (img.isMarketplacePhoto) {
-        // Marketplace photo - use originalUrl for high-res printing
-        const highResUrl = img.originalUrl || img.s3Url || img.url;
-        console.log(`   ✅ Marketplace photo - using high-res URL: ${highResUrl.substring(0, 80)}...`);
-        
-        try {
-          imageUrl = await generateSignedUrl(highResUrl);
-          console.log(`   ✅ Generated signed URL: ${imageUrl.substring(0, 80)}...`);
-        } catch (err) {
-          console.error(`   ❌ Failed to generate signed URL:`, err);
-          // Skip this photo if we can't generate a signed URL
-          continue;
-        }
-      } else {
-        // Admin photo - use URL as-is (already public or web-optimized)
-        imageUrl = img.url;
-        console.log(`   ✅ Admin photo - using URL: ${imageUrl.substring(0, 80)}...`);
-      }
-      
-      photos.push({
-        id: img.id,
-        name: img.name || img.title,
-        title: img.name || img.title,
-        url: imageUrl,
-        optimizedUrl: imageUrl,
-        isMarketplacePhoto: img.isMarketplacePhoto, // Pass through for debugging
-      });
-    }
-    
-    console.log(`\n✅ Returning ${photos.length} photos for collection "${collectionName}"`);
-    return c.json({ photos });
-  } catch (error: any) {
-    console.error('❌ Failed to fetch photos for collection:', error);
-    return c.json({ error: 'Failed to fetch photos' }, 500);
-  }
-});
-
-// Public endpoint to get inventory (for configurator)
-// ⚠️ CRITICAL: Uses KV key 'inventory' - same as admin endpoints
-// Do NOT change this key or it will break sync with admin panel
-app.get("/make-server-3e3a9cd7/inventory", async (c) => {
-  try {
-    const inventory = await kv.get('inventory') || [];
-    
-    // Return inventory data in the same format as admin endpoint
-    return c.json({ inventory });
-  } catch (error: any) {
-    console.error('Failed to fetch inventory for public:', error);
-    return c.json({ error: 'Failed to fetch inventory' }, 500);
-  }
-});
-
-// Public endpoint to get testimonials (for homepage ReviewsCarousel)
-app.get("/make-server-3e3a9cd7/testimonials", async (c) => {
-  try {
-    console.log('📝 Public testimonials endpoint called');
-    console.log('📝 Request headers:', Object.fromEntries(c.req.raw.headers.entries()));
-    const testimonials = await kv.getByPrefix('testimonial:') || [];
-    console.log(`📝 Found ${testimonials.length} testimonials in database`);
-    
-    // Sort by createdAt (newest first)
-    const sortedTestimonials = testimonials.sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-
-    console.log('📝 Returning testimonials, count:', sortedTestimonials.length);
-    return c.json({ testimonials: sortedTestimonials });
-  } catch (error: any) {
-    console.error('❌ Failed to fetch testimonials:', error);
-    return c.json({ error: 'Failed to fetch testimonials', details: error.message }, 500);
-  }
-});
-
-// Debug endpoint to inspect inventory with special characters visible
-app.get("/make-server-3e3a9cd7/inventory-debug", async (c) => {
-  try {
-    const inventory = await kv.get('inventory') || [];
-    
-    // Convert each item's name to show hidden characters
-    const debugInventory = inventory.map((item: any) => ({
-      ...item,
-      nameDebug: JSON.stringify(item.name), // Shows tabs, special chars
-      nameLength: item.name.length,
-      charCodes: Array.from(item.name).map((char: string) => char.charCodeAt(0)),
-    }));
-    
-    return c.json({ 
-      inventory: debugInventory,
-      count: debugInventory.length,
-      sizes: debugInventory.filter((i: any) => i.category === 'size'),
-    });
-  } catch (error: any) {
-    console.error('Failed to fetch debug inventory:', error);
-    return c.json({ error: 'Failed to fetch inventory' }, 500);
-  }
-});
-
-// Cleanup endpoint to remove inventory items with tab characters or other issues
-app.post("/make-server-3e3a9cd7/inventory-cleanup", async (c) => {
-  try {
-    const inventory = await kv.get('inventory') || [];
-    
-    // Find items with tab characters, leading/trailing whitespace, or other issues
-    const problematicItems = inventory.filter((item: any) => {
-      const hasTab = item.name.includes('\t');
-      const hasLeadingSpace = item.name !== item.name.trimStart();
-      const hasTrailingSpace = item.name !== item.name.trimEnd();
-      return hasTab || hasLeadingSpace || hasTrailingSpace;
-    });
-    
-    // Remove problematic items
-    const cleanedInventory = inventory.filter((item: any) => {
-      const hasTab = item.name.includes('\t');
-      const hasLeadingSpace = item.name !== item.name.trimStart();
-      const hasTrailingSpace = item.name !== item.name.trimEnd();
-      return !(hasTab || hasLeadingSpace || hasTrailingSpace);
-    });
-    
-    // Save cleaned inventory
-    await kv.set('inventory', cleanedInventory);
-    
-    return c.json({ 
-      success: true,
-      removed: problematicItems.length,
-      removedItems: problematicItems.map((item: any) => ({
-        name: item.name,
-        nameDebug: JSON.stringify(item.name),
-        category: item.category,
-        price: item.price,
-      })),
-      remainingCount: cleanedInventory.length,
-    });
-  } catch (error: any) {
-    console.error('Failed to cleanup inventory:', error);
-    return c.json({ error: 'Failed to cleanup inventory' }, 500);
-  }
-});
-
-// Proxy endpoint for S3 images - fetches and returns with CORS headers
-app.options("/make-server-3e3a9cd7/proxy-image", async (c) => {
-  // Handle CORS preflight
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-      'Access-Control-Allow-Headers': '*',
-      'Access-Control-Max-Age': '86400',
-    },
-  });
-});
-
+// Image proxy endpoint to bypass CORS issues with S3 signed URLs
 app.get("/make-server-3e3a9cd7/proxy-image", async (c) => {
-  const isHead = c.req.method === 'HEAD';
-  
-  // Handle HEAD requests for the image
-  if (isHead) {
-    const s3Url = c.req.query('url');
-    
-    if (!s3Url) {
-      return new Response(null, {
-        status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-    }
-    
-    try {
-      const signedUrl = await generateSignedUrl(s3Url);
-      const imageResponse = await fetch(signedUrl, { method: 'HEAD' });
-      
-      return new Response(null, {
-        status: imageResponse.status,
-        headers: {
-          'Content-Type': imageResponse.headers.get('content-type') || 'image/jpeg',
-          'Content-Length': imageResponse.headers.get('content-length') || '0',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-          'Access-Control-Allow-Headers': '*',
-        },
-      });
-    } catch (error: any) {
-      // If file not found, return 404
-      if (error.message?.includes('File not found')) {
-        return new Response(null, {
-          status: 404,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
-      }
-      return new Response(null, {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-    }
-  }
-  
-  // Handle GET requests
   try {
-    const s3Url = c.req.query('url');
+    const imageUrl = c.req.query('url');
     
-    if (!s3Url) {
-      console.error('❌ Proxy image: Missing url parameter');
+    if (!imageUrl) {
       return c.json({ error: 'Missing url parameter' }, 400);
     }
     
-    console.log('🖼️ Fetching S3 image via proxy:', s3Url.substring(0, 80) + '...');
-    
-    // Generate signed URL if it's a direct S3 URL
-    let signedUrl;
-    try {
-      signedUrl = await generateSignedUrl(s3Url);
-      console.log('🔑 Generated signed URL (first 100 chars):', signedUrl.substring(0, 100) + '...');
-    } catch (error: any) {
-      // If file not found in S3, return 404 with CORS headers
-      if (error.message?.includes('File not found')) {
-        console.warn('⚠️ File not found in S3, returning 404:', s3Url.substring(0, 80));
-        return c.json({ 
-          error: 'Image not found in storage',
-          url: s3Url.substring(0, 100) 
-        }, 404);
-      }
-      // For other errors, re-throw
-      throw error;
-    }
+    console.log('🖼️ Proxying image:', imageUrl.substring(0, 80) + '...');
     
     // Fetch the image from S3
-    console.log('📥 Fetching image from S3...');
-    const imageResponse = await fetch(signedUrl);
+    const response = await fetch(imageUrl);
     
-    console.log('📥 S3 Response status:', imageResponse.status);
-    console.log('📥 S3 Response headers:', Object.fromEntries(imageResponse.headers.entries()));
-    
-    if (!imageResponse.ok) {
-      console.error('❌ Failed to fetch image from S3:', imageResponse.status, imageResponse.statusText);
-      const errorText = await imageResponse.text();
-      console.error('❌ S3 Error response:', errorText);
-      return c.json({ error: `Failed to fetch image: ${imageResponse.statusText}`, details: errorText }, imageResponse.status);
+    if (!response.ok) {
+      console.error('❌ Failed to fetch image from S3:', response.status, response.statusText);
+      return c.json({ error: `Failed to fetch image: ${response.statusText}` }, response.status);
     }
     
-    // Get the image data as an ArrayBuffer
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    // Get the image data as array buffer
+    const imageData = await response.arrayBuffer();
     
-    console.log('✅ Image fetched successfully, size:', imageBuffer.byteLength, 'bytes, type:', contentType);
+    // Get content type from original response
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
     
-    // Return the image with CORS headers
-    return new Response(imageBuffer, {
+    console.log('✅ Image proxied successfully:', contentType, imageData.byteLength, 'bytes');
+    
+    // Return the image with proper headers
+    return new Response(imageData, {
       headers: {
         'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=3600',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-        'Access-Control-Allow-Headers': '*',
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
       },
     });
   } catch (error: any) {
-    console.error('❌ Failed to proxy image:', {
-      error: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    return c.json({ error: 'Failed to proxy image: ' + error.message, stack: error.stack }, 500);
+    console.error('❌ Error proxying image:', error);
+    return c.json({ error: error.message }, 500);
   }
-});
-
-// Lightweight endpoint to get signed URL without fetching image (saves memory)
-app.get("/make-server-3e3a9cd7/get-signed-url", async (c) => {
-  try {
-    const s3Url = c.req.query('url');
-    
-    if (!s3Url) {
-      console.error('❌ Get signed URL: Missing url parameter');
-      return c.json({ error: 'Missing url parameter' }, 400);
-    }
-    
-    console.log('🔑 Generating signed URL for:', s3Url.substring(0, 80) + '...');
-    
-    // Generate signed URL if it's a direct S3 URL
-    const signedUrl = await generateSignedUrl(s3Url);
-    console.log('✅ Signed URL generated (first 80 chars):', signedUrl.substring(0, 80) + '...');
-    
-    // Return just the URL - browser will fetch it directly
-    return c.json({ signedUrl });
-  } catch (error: any) {
-    console.error('❌ Failed to generate signed URL:', error);
-    return c.json({ error: 'Failed to generate signed URL: ' + error.message }, 500);
-  }
-});
-
-// Lazy-load admin routes
-app.all("/make-server-3e3a9cd7/admin/*", async (c) => {
-  const { default: adminRoutes } = await import("./admin.ts");
-  return await adminRoutes.fetch(c.req.raw, {});
-});
-
-// Lazy-load auth routes  
-app.post("/make-server-3e3a9cd7/signup", async (c) => {
-  const { default: authRoutes } = await import("./auth.ts");
-  return await authRoutes.fetch(c.req.raw, {});
-});
-
-app.get("/make-server-3e3a9cd7/me", async (c) => {
-  const { default: authRoutes } = await import("./auth.ts");
-  return await authRoutes.fetch(c.req.raw, {});
-});
-
-// Lazy-load checkout routes
-app.all("/make-server-3e3a9cd7/checkout/*", async (c) => {
-  const { default: checkoutRoutes } = await import("./checkout.ts");
-  return await checkoutRoutes.fetch(c.req.raw, {});
-});
-
-// Payment intent and order creation routes (used by checkout)
-app.post("/make-server-3e3a9cd7/create-payment-intent", async (c) => {
-  const { default: checkoutRoutes } = await import("./checkout.ts");
-  return await checkoutRoutes.fetch(c.req.raw, {});
-});
-
-app.post("/make-server-3e3a9cd7/create-order", async (c) => {
-  const { default: checkoutRoutes } = await import("./checkout.ts");
-  return await checkoutRoutes.fetch(c.req.raw, {});
-});
-
-// Update order routes (for image upload after payment)
-app.post("/make-server-3e3a9cd7/update-order", async (c) => {
-  const { default: checkoutRoutes } = await import("./checkout.ts");
-  return await checkoutRoutes.fetch(c.req.raw, {});
-});
-
-app.post("/make-server-3e3a9cd7/update-order-status", async (c) => {
-  const { default: checkoutRoutes } = await import("./checkout.ts");
-  return await checkoutRoutes.fetch(c.req.raw, {});
-});
-
-// Lazy-load customer routes
-app.get("/make-server-3e3a9cd7/order/:orderId/tracking", async (c) => {
-  const { default: customerRoutes } = await import("./customer.ts");
-  return await customerRoutes.fetch(c.req.raw, {});
-});
-
-app.get("/make-server-3e3a9cd7/tracking/:trackingNumber", async (c) => {
-  const { default: customerRoutes } = await import("./customer.ts");
-  return await customerRoutes.fetch(c.req.raw, {});
-});
-
-app.get("/make-server-3e3a9cd7/tracking/:trackingNumber/live", async (c) => {
-  const { default: customerRoutes } = await import("./customer.ts");
-  return await customerRoutes.fetch(c.req.raw, {});
-});
-
-// Track orders by email (public endpoint - for guest checkout)
-app.post("/make-server-3e3a9cd7/tracking/by-email", async (c) => {
-  const { default: customerRoutes } = await import("./customer.ts");
-  return await customerRoutes.fetch(c.req.raw, {});
 });
 
 // Customer address management routes
@@ -563,6 +159,36 @@ app.all("/make-server-3e3a9cd7/customer/*", async (c) => {
   const { default: customerRoutes } = await import("./customer.ts");
   return await customerRoutes.fetch(c.req.raw, {});
 });
+
+// Customer collections endpoint (for Stock Photos page)
+app.get("/make-server-3e3a9cd7/collections", async (c) => {
+  const { default: customerRoutes } = await import("./customer.ts");
+  return await customerRoutes.fetch(c.req.raw, {});
+});
+
+// Collection details endpoint (for CollectionPage)
+app.get("/make-server-3e3a9cd7/stock-photos/:collectionName", async (c) => {
+  const { default: customerRoutes } = await import("./customer.ts");
+  return await customerRoutes.fetch(c.req.raw, {});
+});
+
+// Public testimonials endpoint (no auth required)
+app.get("/make-server-3e3a9cd7/testimonials", async (c) => {
+  try {
+    console.log('📝 GET /testimonials (public) called');
+    const testimonials = await kv.get('testimonials') || [];
+    console.log(`✅ Returning ${testimonials.length} testimonials`);
+    return c.json({ testimonials });
+  } catch (error: any) {
+    console.error('❌ Failed to fetch testimonials:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Mount admin routes (includes inventory, testimonials, orders, etc.)
+// Note: admin.ts routes are already prefixed with /make-server-3e3a9cd7
+const { default: adminRoutes } = await import("./admin.ts");
+app.route('/', adminRoutes);
 
 // Lazy-load webhook routes
 app.all("/make-server-3e3a9cd7/webhooks/*", async (c) => {

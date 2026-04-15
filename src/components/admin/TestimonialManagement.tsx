@@ -72,7 +72,10 @@ export function TestimonialManagement({ adminInfo }: { adminInfo?: { email: stri
         const data = await response.json();
         setTestimonials(data.testimonials || []);
       } else {
-        console.error('Failed to fetch testimonials');
+        const errorText = await response.text().catch(() => 'Unable to read response');
+        console.error('❌ Failed to fetch testimonials, status:', response.status);
+        console.error('❌ Error response body:', errorText);
+        console.error('Response:', errorText);
       }
     } catch (error) {
       console.error('Error fetching testimonials:', error);

@@ -71,7 +71,7 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   return (
     <div className={`min-h-screen bg-[#0a0a0a] [data-theme='light']_&:bg-gray-50 ${bannerDismissed ? 'pt-[80px]' : 'pt-[132px]'} transition-all duration-300`}>
       {/* Header */}
-      <div className={`bg-[#1a1a1a] [data-theme='light']_&:bg-white border-b border-[#2a2a2a] [data-theme='light']_&:border-gray-200 fixed ${bannerDismissed ? 'top-0' : 'top-[52px]'} left-0 right-0 z-40 transition-all duration-300 shadow-lg`}>
+      <div className={`bg-[#1a1a1a] [data-theme='light']_&:bg-white border-b border-[#2a2a2a] [data-theme='light']_&:border-gray-200 fixed ${bannerDismissed ? 'top-0' : 'top-[52px]'} left-0 right-0 z-[60] transition-all duration-300 shadow-lg`}>
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-4">

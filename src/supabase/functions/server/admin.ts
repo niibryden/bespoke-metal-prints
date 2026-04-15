@@ -269,6 +269,18 @@ adminApp.post('/make-server-3e3a9cd7/admin/login', async (c) => {
 
     if (error || !data.session) {
       console.error('❌ Login error:', error);
+      
+      // Check if any admins exist at all
+      const existingAdmins = await kv.getByPrefix('admin:config:');
+      
+      if (!existingAdmins || existingAdmins.length === 0) {
+        console.log('⚠️ No admin users exist in the system');
+        return c.json({ 
+          error: 'No admin users exist. Please use the bootstrap endpoint to create the first admin user.',
+          needsBootstrap: true 
+        }, 401);
+      }
+      
       return c.json({ error: 'Invalid email or password' }, 401);
     }
 
@@ -1149,6 +1161,20 @@ adminApp.delete('/make-server-3e3a9cd7/admin/inventory/all', async (c) => {
   } catch (error: any) {
     console.error('Failed to delete inventory:', error);
     return c.json({ error: 'Failed to delete inventory' }, 500);
+  }
+});
+
+// Public inventory endpoint (for customer-facing pages)
+// No authentication required - used by configurator and product pages
+adminApp.get('/make-server-3e3a9cd7/inventory', async (c) => {
+  try {
+    console.log('📦 Public inventory endpoint called');
+    const inventory = await kv.get('inventory') || [];
+    console.log(`📦 Returning ${inventory.length} inventory items`);
+    return c.json({ inventory });
+  } catch (error: any) {
+    console.error('Failed to fetch public inventory:', error);
+    return c.json({ error: 'Failed to fetch inventory' }, 500);
   }
 });
 
@@ -3573,13 +3599,20 @@ adminApp.route('/', discountApp);
 // Get all testimonials for admin management (with auth)
 adminApp.get('/make-server-3e3a9cd7/admin/testimonials', async (c) => {
   try {
+    console.log('📝 GET /admin/testimonials called');
+    
     // Verify admin authentication
     const authHeader = c.req.header('Authorization');
+    console.log('  Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.log('  ❌ No auth header, returning 401');
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
+    console.log('  📦 Fetching testimonials from KV store...');
     const testimonials = await kv.getByPrefix('testimonial:') || [];
+    console.log(`  ✅ Found ${testimonials.length} testimonials`);
     
     // Sort by createdAt (newest first)
     const sortedTestimonials = testimonials.sort((a, b) => {
@@ -3588,7 +3621,7 @@ adminApp.get('/make-server-3e3a9cd7/admin/testimonials', async (c) => {
 
     return c.json({ testimonials: sortedTestimonials });
   } catch (error: any) {
-    console.error('Failed to fetch testimonials:', error);
+    console.error('❌ Failed to fetch testimonials:', error);
     return c.json({ error: 'Failed to fetch testimonials' }, 500);
   }
 });

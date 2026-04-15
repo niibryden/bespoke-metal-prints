@@ -4,6 +4,7 @@ import { Upload, Settings, Eye, ShoppingCart, Check, X, Image as ImageIcon, Zoom
 import { CheckoutPage } from './CheckoutPage';
 import { useInventory } from '../hooks/useInventory';
 import { getSupabaseClient } from '../utils/supabase/client';
+import { safeGetSession } from '../utils/supabase/auth-manager';
 import { AuthModal } from './AuthModal';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
@@ -367,20 +368,17 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
   // Check for existing session and auth changes
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await safeGetSession();
       if (session) {
         setUser(session.user);
       }
     };
     checkSession();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+    // Note: Auth subscription is handled globally in App.tsx
+    // Individual components should not create their own subscriptions
+    // This prevents auth lock errors from multiple concurrent subscriptions
+  }, []); // Empty dependency array to prevent re-subscription
 
   // Handle checkout click - require authentication and generate print-ready image
   const handleCheckoutClick = async () => {
@@ -557,6 +555,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
           console.log('✅ ConfiguratorSection: Reorder image loaded successfully');
           console.log('   - Dimensions:', img.width, 'x', img.height);
           const detectedOrientation = img.width > img.height ? 'landscape' : 'portrait';
+          console.log('🔄 Auto-detected orientation from reorder:', detectedOrientation);
           
           // Set the image in config
           setConfig(prev => ({
@@ -667,6 +666,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         img.onload = () => {
           console.log('ConfiguratorSection: Image loaded successfully, dimensions:', img.width, 'x', img.height);
           const detectedOrientation = img.width > img.height ? 'landscape' : 'portrait';
+          console.log('🔄 Auto-detected orientation from image:', detectedOrientation);
           setOrientation(detectedOrientation);
           setOriginalImageDimensions({ width: img.width, height: img.height });
           
@@ -742,9 +742,23 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         let imageResponse;
         
         if (isSignedUrl) {
-          console.log('✅ URL is already signed, fetching directly without proxy');
-          // URL is already signed, fetch directly
-          imageResponse = await fetch(stockImageUrl);
+          console.log('✅ URL is signed, using proxy to avoid CORS issues');
+          // Use proxy endpoint to fetch signed URLs (avoids CORS issues)
+          const serverUrl = getServerUrl();
+          
+          if (!serverUrl) {
+            console.error('❌ No server URL available for proxy');
+            throw new Error('Server configuration missing');
+          }
+          
+          const proxyUrl = `${serverUrl}/proxy-image?url=${encodeURIComponent(stockImageUrl)}`;
+          console.log('🔗 Fetching via proxy:', proxyUrl.substring(0, 100) + '...');
+          
+          imageResponse = await fetch(proxyUrl, {
+            headers: {
+              'Authorization': `Bearer ${publicAnonKey}`
+            }
+          });
         } else {
           console.log('🔗 URL is not signed, using proxy endpoint');
           // Use proxy endpoint which returns image with proper CORS headers
@@ -825,6 +839,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         
         // Detect orientation from loaded image
         const detectedOrientation = img.width > img.height ? 'landscape' : 'portrait';
+        console.log('🔄 Auto-detected orientation from stock photo:', detectedOrientation);
         setOrientation(detectedOrientation);
         setOriginalImageDimensions({ width: img.width, height: img.height });
         
@@ -1505,6 +1520,7 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         const img = new Image();
         img.onload = () => {
           const detectedOrientation = img.width > img.height ? 'landscape' : 'portrait';
+          console.log('🔄 Auto-detected orientation from uploaded file:', detectedOrientation, `(${img.width}×${img.height})`);
           setOrientation(detectedOrientation);
           setOriginalImageDimensions({ width: img.width, height: img.height });
           
@@ -1585,7 +1601,9 @@ export function ConfiguratorSection({ initialConfig, initialStep, stockImageUrl,
         
         // Detect orientation from image
         const isPortrait = img.naturalHeight > img.naturalWidth;
-        setOrientation(isPortrait ? 'portrait' : 'landscape');
+        const detectedOrientation = isPortrait ? 'portrait' : 'landscape';
+        console.log('🔄 Auto-detected orientation from dropped image:', detectedOrientation, `(${img.naturalWidth}×${img.naturalHeight})`);
+        setOrientation(detectedOrientation);
         
         // Initialize transform history
         const initialTransform = {

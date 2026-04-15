@@ -23,6 +23,7 @@ interface CartContextType {
   clearCart: () => void;
   getTotalPrice: () => number;
   getItemCount: () => number;
+  getMultiItemDiscount: () => { applied: boolean; amount: number; percentage: number };
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -136,6 +137,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return items.length;
   };
 
+  const getMultiItemDiscount = () => {
+    const itemCount = getItemCount();
+    const MULTI_ITEM_THRESHOLD = 4; // 4+ items get discount
+    const MULTI_ITEM_PERCENTAGE = 15; // 15% off
+    
+    if (itemCount >= MULTI_ITEM_THRESHOLD) {
+      const subtotal = getTotalPrice();
+      const discountAmount = (subtotal * MULTI_ITEM_PERCENTAGE) / 100;
+      
+      return { 
+        applied: true, 
+        amount: discountAmount, 
+        percentage: MULTI_ITEM_PERCENTAGE 
+      };
+    }
+    
+    return { applied: false, amount: 0, percentage: 0 };
+  };
+
   const value: CartContextType = {
     items,
     addItem,
@@ -144,6 +164,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     clearCart,
     getTotalPrice,
     getItemCount,
+    getMultiItemDiscount,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

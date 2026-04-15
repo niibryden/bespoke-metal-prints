@@ -30,14 +30,15 @@ export function CheckoutUpsell({ currentItems, onAddUpsell, className = '' }: Ch
   const getUpsellOptions = (): UpsellOption[] => {
     const options: UpsellOption[] = [];
 
-    // 1. Multi-print discount (always show if only 1 item)
-    if (currentItems.length === 1) {
+    // 1. Multi-print discount (show if less than 4 items)
+    if (currentItems.length < 4) {
+      const remainingForDiscount = 4 - currentItems.length;
       options.push({
-        id: 'second-print',
-        title: 'Add 2nd Print - Save 15%!',
-        description: 'Same or different design. Mix & match sizes.',
+        id: 'multi-print',
+        title: `Add ${remainingForDiscount} More - Save 15%!`,
+        description: 'Get 15% off your entire order with 4+ prints. Mix & match sizes.',
         price: 0, // Will be calculated based on selection
-        badge: 'Most Popular',
+        badge: 'Best Value',
         icon: TrendingUp,
       });
     }

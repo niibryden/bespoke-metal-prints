@@ -327,6 +327,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
     setDiscountError(null);
 
     try {
+      const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-3e3a9cd7`;
       const upperCode = discountCode.trim().toUpperCase();
       
       // Call server to validate discount code
@@ -381,9 +382,15 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
 
   const discountAmount = calculateDiscountAmount();
   const subtotalAfterDiscount = basePrice - discountAmount;
+  
+  // FREE SHIPPING PROMO: Automatic free shipping for orders over $100
+  const FREE_SHIPPING_THRESHOLD = 100;
+  const qualifiesForFreeShipping = subtotalAfterDiscount >= FREE_SHIPPING_THRESHOLD;
+  const hasFreeShippingFromDiscount = appliedDiscount?.freeShipping;
+  const shouldApplyFreeShipping = qualifiesForFreeShipping || hasFreeShippingFromDiscount;
 
   // Calculate total with discount and free shipping
-  const effectiveShippingCost = (appliedDiscount?.freeShipping && selectedRate) ? 0 : (selectedRate ? parseFloat(selectedRate.rate) : 0);
+  const effectiveShippingCost = (shouldApplyFreeShipping && selectedRate) ? 0 : (selectedRate ? parseFloat(selectedRate.rate) : 0);
   const shippingCost = selectedRate ? parseFloat(selectedRate.rate) : 0; // Original shipping cost for display
   const total = subtotalAfterDiscount + effectiveShippingCost;
   
@@ -415,11 +422,14 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
     setError(null);
 
     try {
+      const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-3e3a9cd7`;
       console.log('Fetching shipping rates for size:', orderDetails.size);
       
-      // Normalize size format for server: convert "5" × 7"" to "5\" x 7\""
-      // Replace Unicode × with lowercase x
-      const normalizedSize = orderDetails.size.replace(/×/g, 'x').replace(/"/g, '\\"');
+      // Normalize size format for server: match format like '5" x 7"'
+      // Replace Unicode × with lowercase x  
+      let normalizedSize = orderDetails.size.replace(/×/g, 'x');
+      // Ensure consistent quote format - remove any existing quotes/escapes and normalize
+      normalizedSize = normalizedSize.replace(/\\"/g, '"').trim();
       console.log('Normalized size for server:', normalizedSize);
       
       // Get shipping dimensions based on product size
@@ -449,9 +459,22 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
       console.log('Shipping response status:', response.status);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-        console.error('Shipping error response:', errorData);
-        throw new Error(errorData.error || `Failed to calculate shipping (Status: ${response.status})`);
+        let errorMessage = `Failed to calculate shipping (Status: ${response.status})`;
+        try {
+          const errorText = await response.text();
+          console.error('Shipping error response (raw):', errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            console.error('Shipping error response (parsed):', errorData);
+            errorMessage = errorData.error || errorMessage;
+          } catch (parseError) {
+            console.error('Could not parse error as JSON:', parseError);
+            errorMessage = errorText.substring(0, 200) || errorMessage;
+          }
+        } catch (textError) {
+          console.error('Could not read error response text:', textError);
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -483,6 +506,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
     setError(null);
 
     try {
+      const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-3e3a9cd7`;
       console.log('🔄 Starting payment initialization...');
       
       // Validate that we have a valid total amount
@@ -910,6 +934,19 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                   className="bg-[#1a1a1a] rounded-lg p-6 [data-theme='light']_&:bg-gray-100"
                 >
                   <h2 className="text-xl mb-4 text-white [data-theme='light']_&:text-black">Select Shipping Method</h2>
+                  
+                  {/* Free Shipping Notice */}
+                  {qualifiesForFreeShipping && (
+                    <div className="mb-4 bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-green-500">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="font-semibold">🎉 You qualify for FREE SHIPPING!</span>
+                      </div>
+                      <p className="text-sm text-green-400 mt-1">
+                        Your order total is over $100 - shipping is on us!
+                      </p>
+                    </div>
+                  )}
                   <div className="space-y-3">
                     {shippingRates.map((rate) => (
                       <div
@@ -981,17 +1018,21 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                   
                   <div className="flex justify-between">
                     <span>Shipping ({selectedRate?.service})</span>
-                    <span className={appliedDiscount?.freeShipping ? 'line-through text-gray-500' : ''}>
+                    <span className={shouldApplyFreeShipping ? 'line-through text-gray-500' : ''}>
                       ${shippingCost.toFixed(2)}
                     </span>
                   </div>
                   
-                  {/* Free Shipping Discount Row */}
-                  {appliedDiscount?.freeShipping && shippingCost > 0 && (
+                  {/* Free Shipping Row - Shows for both automatic and discount code */}
+                  {shouldApplyFreeShipping && shippingCost > 0 && (
                     <div className="flex justify-between text-green-500">
                       <span className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" />
-                        Free Shipping ({appliedDiscount.code})
+                        {hasFreeShippingFromDiscount ? (
+                          `Free Shipping (${appliedDiscount.code})`
+                        ) : (
+                          'Free USPS Priority Shipping'
+                        )}
                       </span>
                       <span>-${shippingCost.toFixed(2)}</span>
                     </div>
@@ -1002,9 +1043,9 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                     <span>${total.toFixed(2)}</span>
                   </div>
                   
-                  {appliedDiscount && (
+                  {(appliedDiscount || shouldApplyFreeShipping) && (
                     <div className="text-green-500 text-sm text-center pt-2">
-                      You saved ${(discountAmount + (appliedDiscount.freeShipping ? shippingCost : 0)).toFixed(2)}!
+                      You saved ${(discountAmount + (shouldApplyFreeShipping ? shippingCost : 0)).toFixed(2)}!
                     </div>
                   )}
                 </div>
@@ -1085,6 +1126,7 @@ export function CheckoutPage({ orderDetails, basePrice, onClose, onComplete }: C
                 <StripePaymentForm
                   clientSecret={clientSecret}
                   onSuccess={async () => {
+                    const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-3e3a9cd7`;
                     console.log('💳 Payment confirmed!');
                     
                     // Immediately show confirmation page - don't wait for background operations

@@ -12,17 +12,17 @@ export function FreeShippingProgress({ cartTotal, threshold = 100 }: FreeShippin
 
   if (isEligible) {
     return (
-      <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-4 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-            <Truck className="w-5 h-5 text-white" />
+      <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-2.5 mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <Truck className="w-3.5 h-3.5 text-white" />
           </div>
           <div>
-            <p className="text-green-500 font-semibold">
+            <p className="text-green-500 font-semibold text-sm">
               🎉 You've qualified for FREE SHIPPING!
             </p>
-            <p className="text-green-600 dark:text-green-400 text-sm">
-              Your order ships free
+            <p className="text-green-600 dark:text-green-400 text-xs">
+              USPS Priority shipping included
             </p>
           </div>
         </div>

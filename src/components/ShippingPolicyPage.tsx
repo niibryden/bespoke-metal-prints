@@ -203,8 +203,8 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
                   <div>
                     <h3 className="text-lg text-black dark:text-white mb-2">Free Shipping</h3>
                     <p className="leading-relaxed">
-                      We occasionally offer free shipping promotions. Follow us on social media or sign up for our newsletter 
-                      to be notified of special offers and discounts.
+                      <strong className="text-[#ff6b35]">🎉 Free shipping is automatically applied to all orders over $100!</strong> 
+                      No discount code required - just add $100 or more to your cart and enjoy free shipping on your order.
                     </p>
                   </div>
                 </div>

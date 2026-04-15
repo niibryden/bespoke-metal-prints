@@ -197,6 +197,11 @@ app.get("/make-server-3e3a9cd7/testimonials", async (c) => {
 const { default: adminRoutes } = await import("./admin.ts");
 app.route('/', adminRoutes);
 
+// Mount checkout routes (shipping, payments, orders)
+// Note: checkout.ts routes are already prefixed with /make-server-3e3a9cd7
+const { default: checkoutRoutes } = await import("./checkout.ts");
+app.route('/', checkoutRoutes);
+
 // Lazy-load webhook routes
 app.all("/make-server-3e3a9cd7/webhooks/*", async (c) => {
   const { default: webhookRoutes } = await import("./webhooks.ts");

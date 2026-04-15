@@ -28,6 +28,7 @@ interface NavigationProps {
   onHDMetalPrintGuideClick?: () => void;
   onCareInstructionsClick?: () => void;
   onReviewsClick?: () => void;
+  onCartCheckoutClick?: () => void;
 }
 
 export function Navigation({ 
@@ -46,6 +47,7 @@ export function Navigation({
   onHDMetalPrintGuideClick,
   onCareInstructionsClick,
   onReviewsClick,
+  onCartCheckoutClick,
 }: NavigationProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -492,13 +494,10 @@ export function Navigation({
             onCheckout={() => {
               setShowCart(false);
               setIsMobileMenuOpen(false);
-              // Scroll to configurator for checkout
-              setTimeout(() => {
-                const element = document.getElementById('configurator');
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth' });
-                }
-              }, 100);
+              // Navigate to cart checkout page
+              if (onCartCheckoutClick) {
+                onCartCheckoutClick();
+              }
             }}
           />
         )}

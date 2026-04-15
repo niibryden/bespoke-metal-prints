@@ -26,7 +26,7 @@ interface CartCheckoutPageProps {
 }
 
 export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
-  const { items, removeItem, getTotalPrice, clearCart } = useCart();
+  const { items, removeItem, getTotalPrice, clearCart, getMultiItemDiscount } = useCart();
   const [step, setStep] = useState<'auth' | 'shipping' | 'payment' | 'confirmation'>('auth');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -312,8 +312,11 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
 
   // Calculate base total from cart
   const basePrice = getTotalPrice();
+  
+  // Get multi-item discount
+  const multiItemDiscount = getMultiItemDiscount();
 
-  // Calculate discounted subtotal
+  // Calculate discounted subtotal (includes both discount codes and multi-item discount)
   const calculateDiscountAmount = () => {
     if (!appliedDiscount) return 0;
     
@@ -325,7 +328,7 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
   };
 
   const discountAmount = calculateDiscountAmount();
-  const subtotalAfterDiscount = basePrice - discountAmount;
+  const subtotalAfterDiscount = basePrice - discountAmount - multiItemDiscount.amount;
 
   // Calculate total with discount
   const shippingCost = selectedRate ? parseFloat(selectedRate.rate) : 0;
@@ -877,6 +880,15 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
                     <span>Subtotal:</span>
                     <span>${basePrice.toFixed(2)}</span>
                   </div>
+                  {multiItemDiscount.applied && (
+                    <div className="flex justify-between text-green-500">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Multi-Item Discount ({multiItemDiscount.percentage}% off):
+                      </span>
+                      <span>-${multiItemDiscount.amount.toFixed(2)}</span>
+                    </div>
+                  )}
                   {appliedDiscount && (
                     <div className="flex justify-between text-green-500">
                       <span>Discount ({appliedDiscount.code}):</span>
@@ -893,6 +905,11 @@ export function CartCheckoutPage({ onClose }: CartCheckoutPageProps) {
                     <span>Total:</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
+                  {(multiItemDiscount.applied || appliedDiscount) && (
+                    <div className="text-green-500 text-sm text-center pt-2">
+                      You saved ${(multiItemDiscount.amount + discountAmount).toFixed(2)}!
+                    </div>
+                  )}
                 </div>
               </div>
 

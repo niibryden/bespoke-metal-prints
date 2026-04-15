@@ -91,7 +91,9 @@ export function CollectionPage({ collection, onClose, onBack, onCreateOrder }: C
   };
 
   const handleImageClick = (photo: Photo) => {
+    console.log('CollectionPage: handleImageClick called for:', photo.name);
     const imageUrl = photo.optimizedUrl || photo.url;
+    console.log('CollectionPage: Setting enlarged image to:', imageUrl.substring(0, 80));
     setEnlargedImage({ url: imageUrl, title: photo.name });
   };
 
@@ -173,8 +175,11 @@ export function CollectionPage({ collection, onClose, onBack, onCreateOrder }: C
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   className="group relative"
                 >
-                  {/* Image container */}
-                  <div className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-[#2a2a2a] group-hover:border-[#ff6b35] transition-all [data-theme='light']_&:border-gray-300">
+                  {/* Image container - clickable to open preview */}
+                  <div 
+                    className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-[#2a2a2a] group-hover:border-[#ff6b35] transition-all [data-theme='light']_&:border-gray-300 cursor-pointer"
+                    onClick={() => handleImageClick(image)}
+                  >
                     <ImageWithFallback
                       src={image.url}
                       alt={image.name}
@@ -184,14 +189,20 @@ export function CollectionPage({ collection, onClose, onBack, onCreateOrder }: C
                     {/* Hover overlay with buttons */}
                     <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
                       <button
-                        onClick={() => handleImageClick(image)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent triggering the parent div's onClick
+                          handleImageClick(image);
+                        }}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-[#2a2a2a] transition-all border border-[#ff6b35]/50"
                       >
                         <ZoomIn className="w-4 h-4" />
                         View Larger Image
                       </button>
                       <button
-                        onClick={() => handleCreateOrder(image.url)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent triggering the parent div's onClick
+                          handleCreateOrder(image.url);
+                        }}
                         className="flex items-center gap-2 px-4 py-2 bg-[#ff6b35] text-black rounded-lg hover:bg-[#ff8c42] transition-all"
                       >
                         <Printer className="w-4 h-4" />

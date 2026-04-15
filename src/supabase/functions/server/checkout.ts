@@ -115,28 +115,39 @@ async function updateOrderIndex(order: any) {
 // Get shipping rates from EasyPost
 checkoutApp.post('/make-server-3e3a9cd7/checkout/shipping-rates', async (c) => {
   try {
-    const { shippingAddress, size } = await c.req.json();
+    console.log('📦 === SHIPPING RATES REQUEST ===');
+    const requestBody = await c.req.json();
+    console.log('📦 Request body:', JSON.stringify(requestBody, null, 2));
+    
+    const { shippingAddress, size } = requestBody;
     
     if (!shippingAddress || !size) {
+      console.error('❌ Missing required fields:', { hasAddress: !!shippingAddress, hasSize: !!size });
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
     // Get shipping specifications
+    console.log('📦 Looking up shipping spec for size:', size);
     let shippingSpec = getShippingSpec(size);
     
     if (!shippingSpec) {
       // Parse custom size (e.g., "18\" x 24\"")
+      console.log('📦 Standard size not found, parsing custom size...');
       const match = size.match(/(\d+).*?x.*?(\d+)/);
       if (match) {
         const width = parseInt(match[1]);
         const height = parseInt(match[2]);
+        console.log('📦 Parsed custom dimensions:', { width, height });
         shippingSpec = calculateCustomShipping(width, height);
       } else {
+        console.error('❌ Invalid size format:', size);
         return c.json({ error: 'Invalid size format' }, 400);
       }
     }
-
+    
+    console.log('📦 Shipping spec:', shippingSpec);
     const parcel = toEasyPostParcel(shippingSpec);
+    console.log('📦 EasyPost parcel:', parcel);
     
     const apiKey = Deno.env.get('EASYPOST_API_KEY');
     if (!apiKey) {

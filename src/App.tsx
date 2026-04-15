@@ -25,6 +25,7 @@ const PhotographerLoginPage = lazy(() => import('./components/PhotographerLoginP
 const PhotographerSignupPage = lazy(() => import('./components/PhotographerSignupPage').then(m => ({ default: m.PhotographerSignupPage })));
 const PhotographerMarketplaceHub = lazy(() => import('./components/PhotographerMarketplaceHub').then(m => ({ default: m.default })));
 const MarketplacePage = lazy(() => import('./components/MarketplaceBrowsePage').then(m => ({ default: m.MarketplaceBrowsePage })));
+const CartCheckoutPage = lazy(() => import('./components/CartCheckoutPage').then(m => ({ default: m.CartCheckoutPage })));
 const TermsConditions = lazy(() => import('./components/TermsConditionsPage').then(m => ({ default: m.TermsConditionsPage })));
 const RefundPolicy = lazy(() => import('./components/RefundPolicyPage').then(m => ({ default: m.RefundPolicyPage })));
 const ShippingPolicy = lazy(() => import('./components/ShippingPolicyPage').then(m => ({ default: m.ShippingPolicyPage })));
@@ -50,7 +51,8 @@ type Page =
   | 'admin' 
   | 'admin/bootstrap' 
   | 'photographer' 
-  | 'marketplace' 
+  | 'marketplace'
+  | 'cart-checkout'
   | 'terms-conditions' 
   | 'refund-policy' 
   | 'shipping-policy' 
@@ -113,7 +115,7 @@ export default function App() {
 
   const defaultSEO: SEOConfig = {
     title: "Bespoke Metal Prints | Premium HD Metal Wall Art Printing",
-    description: "Transform your photos into stunning metal prints. Premium HD quality, vibrant colors, and professional craftsmanship. Free shipping on orders over $150.",
+    description: "Transform your photos into stunning metal prints. Premium HD quality, vibrant colors, and professional craftsmanship. Free shipping on orders over $100.",
     canonical: "https://www.bespokemetalprints.com",
     keywords: "metal prints, photo printing, wall art, HD metal prints, custom prints",
   };
@@ -229,6 +231,7 @@ export default function App() {
             onHDMetalPrintGuideClick={() => navigateToPage('hd-metal-print-guide')}
             onCareInstructionsClick={() => navigateToPage('care-instructions')}
             onReviewsClick={() => navigateToPage('reviews')}
+            onCartCheckoutClick={() => navigateToPage('cart-checkout')}
           />
           <main className="min-h-screen">
             {currentPage === 'home' && (
@@ -357,6 +360,11 @@ export default function App() {
                   onClose={() => navigateToPage('home')}
                   onSelectImage={handleStockPhotoSelect}
                 />
+              </Suspense>
+            )}
+            {currentPage === 'cart-checkout' && (
+              <Suspense fallback={<LoadingSkeleton />}>
+                <CartCheckoutPage onClose={() => navigateToPage('home')} />
               </Suspense>
             )}
             {currentPage === 'terms-conditions' && (

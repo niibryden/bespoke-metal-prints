@@ -208,7 +208,7 @@ export function LivePricePreview({
           className="p-3 bg-gradient-to-r from-green-500/10 to-green-600/10 border-t border-green-500/20"
         >
           <p className="text-xs text-center text-green-400">
-            💡 <strong>Save 15%</strong> when you add 2 or more prints to cart!
+            💡 <strong>Save 15%</strong> when you add 4 or more prints to cart!
           </p>
         </motion.div>
       </motion.div>

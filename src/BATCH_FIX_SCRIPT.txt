@@ -1,0 +1,96 @@
+# Batch Fix for ReturnToHomeButton Removal
+
+## Files Requiring Updates (30 remaining)
+
+Since the ReturnToHomeButton component has been deleted, these files need two changes:
+
+### Change 1: Remove Import Line
+Find and delete lines matching pattern:
+```
+import { ReturnToHomeButton } from './ReturnToHomeButton';
+```
+
+### Change 2: Remove Component Usage
+Find and delete one of these patterns:
+
+Pattern A - Standalone with comment:
+```jsx
+{/* Return to Home Button - Fixed Position */}
+<ReturnToHomeButton onClick={onClose} />
+```
+
+Pattern B - With wrapper div:
+```jsx
+<div className="mb-6">
+  <ReturnToHomeButton onClick={onClose} />
+</div>
+```
+
+Pattern C - With different wrapper:
+```jsx
+<div className="mb-8">
+  <ReturnToHomeButton onClick={onClose} />
+</div>
+```
+
+Pattern D - Inline without wrapper:
+```jsx
+<ReturnToHomeButton onClick={onClose} />
+```
+
+Pattern E - Without onClick:
+```jsx
+<ReturnToHomeButton />
+```
+
+Pattern F - With fixed positioning wrapper:
+```jsx
+<div className="fixed top-6 left-6 z-20">
+  <ReturnToHomeButton onClick={onClose} />
+</div>
+```
+
+Pattern G - Inline in breadcrumb/header:
+```jsx
+<ReturnToHomeButton onClick={onBack} />
+```
+
+Pattern H - With custom className:
+```jsx
+<ReturnToHomeButton onClick={onBack} className="mb-8" />
+```
+
+##Files List (Alphabetical)
+
+1. AccountPage.tsx
+2. AdminBootstrap.tsx
+3. AdminLogin.tsx
+4. BestWallArtBathroomsPage.tsx - ✅ DONE
+5. BestWallArtOfficesPage.tsx
+6. CareInstructionsPage.tsx
+7. CartCheckoutPage.tsx  
+8. CollectionDetailView.tsx
+9. CollectionPage.tsx
+10. CompleteGuidePage.tsx
+11. DiagnosticPage.tsx
+12. FAQPage.tsx
+13. HDMetalPrintGuidePage.tsx
+14. MarketplaceBrowsePage.tsx
+15. MetalPrintsExplainedPage.tsx
+16. MetalPrintsVsAcrylicPage.tsx
+17. MetalPrintsVsCanvasPage.tsx
+18. MetalPrintsVsPaperPage.tsx
+19. PhotographerLoginPage.tsx
+20. PhotographerMarketplaceHub.tsx
+21. PhotographerSignupPage.tsx
+22. PrivacyPolicyPage.tsx
+23. RefundPolicyPage.tsx
+24. ReviewsPage.tsx
+25. ShippingPolicyPage.tsx
+26. SizeGuidePage.tsx
+27. StockPhotosPage.tsx
+28. SupportSyncIntegrationPage.tsx
+29. TermsConditionsPage.tsx
+
+## Note
+All pages already have Navigation and Footer at the app level, so removing this button doesn't impact navigation.

@@ -9,6 +9,7 @@ import { AdminSettings } from './admin/AdminSettings';
 import { DiscountManagement } from './admin/DiscountManagement';
 import { TestimonialManagement } from './admin/TestimonialManagement';
 import { UserManagement } from './admin/UserManagement';
+import { DarkModeToggleSwap } from './DarkModeToggle';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -36,16 +37,6 @@ type ActiveTab = 'overview' | 'photos' | 'inventory' | 'orders' | 'settings' | '
 export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   
-  const [bannerDismissed, setBannerDismissed] = useState(() => {
-    return localStorage.getItem('christmas-banner-dismissed') === 'true';
-  });
-  
-  useEffect(() => {
-    const handleBannerDismissed = () => setBannerDismissed(true);
-    window.addEventListener('banner-dismissed', handleBannerDismissed);
-    return () => window.removeEventListener('banner-dismissed', handleBannerDismissed);
-  }, []);
-  
   // Handle automatic logout on bad JWT
   const handleBadJWT = () => {
     console.log('🚨 Bad JWT detected, forcing logout...');
@@ -57,7 +48,7 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard, permission: 'canViewOrders' },
     { id: 'orders' as const, label: 'Orders', icon: ShoppingBag, permission: 'canViewOrders' },
     { id: 'users' as const, label: 'User Management', icon: Users, permission: 'canManageInventory' },
-    { id: 'marketplace' as const, label: 'Marketplace Approvals', icon: Camera, permission: 'canManageInventory' },
+    { id: 'marketplace' as const, label: 'Marketplace', icon: Camera, permission: 'canManageInventory' },
     { id: 'photos' as const, label: 'Stock Photos', icon: Image, permission: 'canViewOrders' },
     { id: 'inventory' as const, label: 'Inventory', icon: Package, permission: 'canManageInventory' },
     { id: 'discounts' as const, label: 'Discounts', icon: Tag, permission: 'canManageInventory' },
@@ -69,9 +60,9 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
   console.log('✅ AdminDashboard - adminInfo.permissions:', adminInfo.permissions);
   
   return (
-    <div className={`min-h-screen bg-[#0a0a0a] [data-theme='light']_&:bg-gray-50 ${bannerDismissed ? 'pt-[80px]' : 'pt-[132px]'} transition-all duration-300`}>
+    <div className="min-h-screen bg-[#0a0a0a] [data-theme='light']_&:bg-gray-50 pt-[80px] transition-all duration-300">
       {/* Header */}
-      <div className={`bg-[#1a1a1a] [data-theme='light']_&:bg-white border-b border-[#2a2a2a] [data-theme='light']_&:border-gray-200 fixed ${bannerDismissed ? 'top-0' : 'top-[52px]'} left-0 right-0 z-[60] transition-all duration-300 shadow-lg`}>
+      <div className="bg-[#1a1a1a] [data-theme='light']_&:bg-white border-b border-[#2a2a2a] [data-theme='light']_&:border-gray-200 fixed top-0 left-0 right-0 z-[60] transition-all duration-300 shadow-lg">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-4">
@@ -85,13 +76,20 @@ export function AdminDashboard({ onLogout, adminInfo }: AdminDashboardProps) {
                 </p>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] [data-theme='light']_&:bg-gray-100 text-white [data-theme='light']_&:text-gray-700 rounded-lg hover:bg-[#ff6b35] hover:text-white transition-all shadow-md hover:shadow-lg"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Dark mode toggle */}
+              <div className="scale-90 sm:scale-100">
+                <DarkModeToggleSwap />
+              </div>
+              {/* Logout button */}
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-[#2a2a2a] [data-theme='light']_&:bg-gray-100 text-white [data-theme='light']_&:text-gray-700 rounded-lg hover:bg-[#ff6b35] hover:text-white transition-all shadow-md hover:shadow-lg"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium hidden sm:inline">Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

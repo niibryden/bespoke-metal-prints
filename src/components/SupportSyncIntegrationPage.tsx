@@ -1,6 +1,5 @@
 import React from 'react';
 import { ArrowLeft, Code2, Settings, Zap, MessageCircle, Palette, Move } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 export function SupportSyncIntegrationPage() {
   return (
@@ -8,9 +7,6 @@ export function SupportSyncIntegrationPage() {
       {/* Header */}
       <div className="border-b border-gray-200 dark:border-[#2a2a2a]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-4">
-            <ReturnToHomeButton onClick={() => window.history.back()} />
-          </div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">SupportSync Widget Integration</h1>
           <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
             Complete documentation of how the live chat widget was embedded into Bespoke Metal Prints

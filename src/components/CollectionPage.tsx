@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, ImageIcon, Printer, ChevronLeft, Grid3x3, List, Search as SearchIcon, Loader2, CheckCircle, ChevronRight, Home, ZoomIn } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 

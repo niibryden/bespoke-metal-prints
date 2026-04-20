@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Package, Sparkles, Shield, Home, Check } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface MetalPrintsExplainedPageProps {
   onClose: () => void;
@@ -32,11 +31,6 @@ export function MetalPrintsExplainedPage({ onClose }: MetalPrintsExplainedPagePr
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Return to Home Button */}
-        <div className="mb-6">
-          <ReturnToHomeButton onClick={onClose} />
-        </div>
-
         {/* Introduction */}
         <div className="prose prose-gray dark:prose-invert max-w-none mb-8">
           <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">

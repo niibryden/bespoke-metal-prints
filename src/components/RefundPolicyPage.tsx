@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Shield, Package, Clock, AlertCircle } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface RefundPolicyPageProps {
   onBack: () => void;
@@ -21,11 +20,6 @@ export function RefundPolicyPage({ onBack }: RefundPolicyPageProps) {
   return (
     <div className={`min-h-screen bg-white dark:bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 transition-all duration-300`}>
       <div className="container mx-auto px-4 max-w-4xl">
-        {/* Return to Home Button */}
-        <div className="mb-8">
-          <ReturnToHomeButton onClick={onBack} />
-        </div>
-
         {/* Header */}
         <motion.div
           className="text-center mb-12"

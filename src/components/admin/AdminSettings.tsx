@@ -53,6 +53,9 @@ export function AdminSettings({ adminInfo }: AdminSettingsProps) {
 
   const [cleanupMessage, setCleanupMessage] = useState('');
   const [isCleaningUp, setIsCleaningUp] = useState(false);
+  
+  const [migrationMessage, setMigrationMessage] = useState('');
+  const [isMigrating, setIsMigrating] = useState(false);
 
   const [ordersModified, setOrdersModified] = useState(0);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -260,7 +263,7 @@ export function AdminSettings({ adminInfo }: AdminSettingsProps) {
     setCleanupMessage('');
 
     try {
-      console.log('🧹 Starting database cleanup...');
+      console.log(' Starting database cleanup...');
       const response = await fetch(
         `${serverUrl}/admin/cleanup-order-images`,
         {
@@ -287,6 +290,49 @@ export function AdminSettings({ adminInfo }: AdminSettingsProps) {
       setCleanupMessage(`❌ Error: ${error instanceof Error ? error.message : 'Cleanup failed'}`);
     } finally {
       setIsCleaningUp(false);
+    }
+  };
+
+  const handleMarketplaceMigration = async () => {
+    if (!confirm('This will add imageUrl field to all marketplace photos. This is safe and reversible. Continue?')) {
+      return;
+    }
+
+    setIsMigrating(true);
+    setMigrationMessage('');
+
+    try {
+      console.log('🔄 Starting marketplace migration...');
+      const response = await fetch(
+        `${serverUrl}/marketplace/admin/migrate-image-urls`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': getAuthHeader(),
+            'X-Admin-Email': adminInfo.email,
+          },
+        }
+      );
+
+      console.log('📡 Migration response status:', response.status, response.statusText);
+      
+      const data = await response.json();
+      console.log('📦 Migration response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || `Migration failed with status ${response.status}`);
+      }
+
+      setMigrationMessage(
+        `✅ Migration complete! Updated ${data.updatedCount} of ${data.totalPhotos} photos. ` +
+        (data.errorCount > 0 ? `${data.errorCount} errors occurred.` : '')
+      );
+      console.log('✅ Migration results:', data);
+    } catch (error) {
+      console.error('❌ Migration error:', error);
+      setMigrationMessage(`❌ Migration error: ${error instanceof Error ? error.message : 'Migration failed'}`);
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -610,6 +656,43 @@ export function AdminSettings({ adminInfo }: AdminSettingsProps) {
             className="px-6 py-2 bg-[#ff6b35] text-white rounded-lg hover:bg-[#ff8555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {isCleaningUp ? 'Cleaning...' : 'Cleanup Database'}
+          </button>
+        </div>
+      </div>
+
+      {/* Marketplace Migration Section */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Tag className="w-5 h-5 text-blue-600" />
+          </div>
+          <h3 className="text-lg text-gray-900 font-medium">
+            Marketplace Migration
+          </h3>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-700 mb-2 font-medium">
+              Add imageUrl Field
+            </label>
+            <p className="text-xs text-gray-600">
+              This will add imageUrl field to all marketplace photos. This is safe and reversible.
+            </p>
+          </div>
+
+          {migrationMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">
+              {migrationMessage}
+            </div>
+          )}
+
+          <button
+            onClick={handleMarketplaceMigration}
+            disabled={isMigrating}
+            className="px-6 py-2 bg-[#ff6b35] text-white rounded-lg hover:bg-[#ff8555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {isMigrating ? 'Migrating...' : 'Migrate Marketplace'}
           </button>
         </div>
       </div>

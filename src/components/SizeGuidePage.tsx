@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, Ruler, Home, Maximize2, Image, DollarSign, CheckCircle, AlertCircle } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import img20x20LivingRoom from 'figma:asset/c631d88cda172aa79bbfa275e5b051663623c2a8.png';
 import imgSizeComparisonStacked from 'figma:asset/239b0bd45e088915587b9a145f68289ad25e501b.png';
@@ -137,21 +136,21 @@ export function SizeGuidePage({ onClose }: SizeGuidePageProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <ReturnToHomeButton onClick={onClose} />
-            <div>
-              <h1 className="text-gray-900 dark:text-white">Metal Print Size Guide</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Find the perfect size for your space
-              </p>
-            </div>
+          <div>
+            <h1 className="text-gray-900 dark:text-white">Metal Print Size Guide</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Find the perfect size for your space
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-            aria-label="Close size guide"
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors group"
+            aria-label="Return to Home"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
+              Return to Home
+            </span>
           </button>
         </div>
       </div>

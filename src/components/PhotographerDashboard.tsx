@@ -24,6 +24,7 @@ import {
 import { getServerUrl } from '../utils/serverUrl';
 import { getSupabaseClient } from '../utils/supabase/client';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { DarkModeToggleSwap } from './DarkModeToggle';
 
 interface PhotographerDashboardProps {
   photographerEmail: string;
@@ -370,9 +371,9 @@ export function PhotographerDashboard({ photographerEmail, onLogout, onUploadCli
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0a0a0a] dark:to-[#1a1a1a]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0a0a0a] dark:to-[#1a1a1a] pt-[80px]">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-gray-200 dark:border-[#2a2a2a] fixed top-20 left-0 right-0 z-40 shadow-sm">
+      <div className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-gray-200 dark:border-[#2a2a2a] fixed top-0 left-0 right-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-4">
@@ -385,6 +386,11 @@ export function PhotographerDashboard({ photographerEmail, onLogout, onUploadCli
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Dark mode toggle */}
+              <div className="scale-90 sm:scale-100">
+                <DarkModeToggleSwap />
+              </div>
+              {/* Upload button */}
               <button
                 onClick={() => {
                   if (onUploadClick) {
@@ -393,15 +399,16 @@ export function PhotographerDashboard({ photographerEmail, onLogout, onUploadCli
                     setShowUploadModal(true);
                   }
                 }}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 font-medium"
+                className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 font-medium"
               >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Upload Photo</span>
                 <Plus className="w-4 h-4 sm:hidden" />
               </button>
+              {/* Logout button */}
               <button
                 onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-3 bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-[#333] transition-all duration-200"
+                className="flex items-center gap-2 px-3 sm:px-4 py-3 bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-[#333] transition-all duration-200"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Logout</span>
@@ -411,7 +418,7 @@ export function PhotographerDashboard({ photographerEmail, onLogout, onUploadCli
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl pt-48">{/* Increased top padding to account for fixed header */}
+      <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">{/* Removed extra top padding since we already have pt-[80px] on parent */}
         {/* Photographer Status Banner */}
         {photographerStatus === 'pending' && (
           <motion.div

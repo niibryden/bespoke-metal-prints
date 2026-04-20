@@ -45,18 +45,18 @@ export function getSupabaseClient() {
         autoRefreshToken: true,
         // Persist session
         persistSession: true,
-        // Detect session from URL
+        // Detect session from URL (important for OAuth)
         detectSessionInUrl: true,
-        // Flow type for authentication
+        // Flow type for authentication (PKCE is more secure)
         flowType: 'pkce',
         // Increase lock timeout and retry settings to prevent errors
         lock: {
-          acquireTimeout: 15000, // 15 seconds - higher to handle React Strict Mode
-          retryInterval: 50, // Check every 50ms for faster acquisition
+          acquireTimeout: 20000, // 20 seconds - higher to handle React Strict Mode
+          retryInterval: 100, // Check every 100ms
         },
-        // Debounce storage events to prevent multiple simultaneous operations
-        storageKey: 'sb-auth-token',
-        debug: false, // Disable debug logs in production
+        // Storage key - use unique key to avoid conflicts
+        storageKey: 'bespoke-metal-prints-auth',
+        debug: true, // Enable debug logs to see what's happening
       },
       global: {
         headers: {

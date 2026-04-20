@@ -252,6 +252,7 @@ adminApp.post('/make-server-3e3a9cd7/admin/login', async (c) => {
     console.log('📧 Email:', email);
 
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return c.json({ error: 'Email and password are required' }, 400);
     }
 
@@ -268,7 +269,8 @@ adminApp.post('/make-server-3e3a9cd7/admin/login', async (c) => {
     });
 
     if (error || !data.session) {
-      console.error('❌ Login error:', error);
+      console.log('⚠️ Login failed for email:', email);
+      console.log('⚠️ Reason:', error?.message || 'No session returned');
       
       // Check if any admins exist at all
       const existingAdmins = await kv.getByPrefix('admin:config:');
@@ -281,7 +283,10 @@ adminApp.post('/make-server-3e3a9cd7/admin/login', async (c) => {
         }, 401);
       }
       
-      return c.json({ error: 'Invalid email or password' }, 401);
+      // Return a more helpful error message
+      return c.json({ 
+        error: 'Invalid email or password. Please check your credentials and try again.' 
+      }, 401);
     }
 
     console.log('✅ Login successful, session created');

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, MapPin, Truck, CheckCircle, Search, Loader2, ExternalLink, Calendar, Info, X, Weight, User, FileText } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface TrackingPageProps {
   onClose: () => void;
@@ -350,11 +349,6 @@ export function TrackingPage({ onClose, initialTrackingNumber = '', initialOrder
 
       {/* Main Content */}
       <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl">
-        {/* Return to Home Button */}
-        <div className="mb-8">
-          <ReturnToHomeButton onClick={onClose} />
-        </div>
-
         {/* Search Section */}
         <motion.div
           className="mb-8"

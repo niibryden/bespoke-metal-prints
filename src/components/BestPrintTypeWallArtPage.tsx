@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Check } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface BestPrintTypeWallArtPageProps {
   onClose: () => void;
@@ -15,28 +14,7 @@ export function BestPrintTypeWallArtPage({ onClose }: BestPrintTypeWallArtPagePr
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-white dark:bg-[#0a0a0a] z-50 overflow-y-auto"
     >
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-gray-900 dark:text-white">Best Print Type for Wall Art</h1>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-              aria-label="Close page"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Return to Home Button */}
-        <div className="mb-6">
-          <ReturnToHomeButton onClick={onClose} />
-        </div>
-
         {/* Summary Block */}
         <div className="bg-gradient-to-br from-[#ff6b35]/10 to-orange-100/20 dark:from-[#ff6b35]/20 dark:to-orange-900/10 rounded-2xl p-6 mb-8">
           <p className="text-gray-900 dark:text-white leading-relaxed">

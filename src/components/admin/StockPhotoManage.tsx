@@ -750,7 +750,7 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                     </div>
                     <div className="flex gap-2">
                       {/* Select All / Deselect All button */}
-                      {selectedPhotos.size === 0 ? (
+                      {selectedPhotos.size === 0 && (
                         <button
                           onClick={selectAllPhotos}
                           className="flex items-center gap-2 px-3 py-2 bg-[#ff6b35]/10 text-[#ff6b35] border border-[#ff6b35]/20 rounded-lg hover:bg-[#ff6b35]/20 transition-all text-sm"
@@ -758,7 +758,8 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                           <CheckSquare className="w-4 h-4" />
                           Select All
                         </button>
-                      ) : (
+                      )}
+                      {selectedPhotos.size > 0 && (
                         <button
                           onClick={deselectAllPhotos}
                           className="flex items-center gap-2 px-3 py-2 bg-gray-600/10 text-gray-400 border border-gray-600/20 rounded-lg hover:bg-gray-600/20 transition-all text-sm"
@@ -813,11 +814,13 @@ export function StockPhotoManage({ adminInfo }: { adminInfo?: { email: string; r
                           // Filter out original files - we only want -web.jpg versions
                           return photo.url.includes('-web.') || !photo.url.includes('-original.');
                         })
-                        .map(photo => {
+                        .map((photo, index) => {
                         const isSelected = selectedPhotos.has(photo.id);
+                        // Ensure unique key by combining photo ID with index as fallback
+                        const uniqueKey = photo.id || `photo-${index}`;
                         return (
                           <motion.div
-                            key={photo.id}
+                            key={uniqueKey}
                             layout
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}

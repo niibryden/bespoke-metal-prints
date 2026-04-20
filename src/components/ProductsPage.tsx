@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, Check, ArrowRight, Palette, Feather, Package, Mountain, Shield, Sparkles, DollarSign } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useInventory } from '../hooks/useInventory';
 import imgFrontBack from 'figma:asset/fc5326d3ef96710ce5e71421bdceec94c8906060.png';
@@ -132,20 +131,18 @@ export function ProductsPage({ onClose, onStartDesigning }: ProductsPageProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-            aria-label="Close products page"
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors group"
+            aria-label="Return to Home"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
+              Return to Home
+            </span>
           </button>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Return to Home Button */}
-        <div className="mb-8">
-          <ReturnToHomeButton onClick={onClose} />
-        </div>
-
         {/* Features Section - ChromaLuxe Style */}
         <section className="mb-20">
           <div className="text-center mb-12">

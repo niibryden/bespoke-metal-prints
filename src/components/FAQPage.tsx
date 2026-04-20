@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ChevronDown, Search, Package, Truck, CreditCard, Image, Ruler, HelpCircle } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface FAQPageProps {
   onClose: () => void;
@@ -192,10 +191,13 @@ export function FAQPage({ onClose }: FAQPageProps) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-              aria-label="Close FAQ page"
+              className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors group"
+              aria-label="Return to Home"
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
+                Return to Home
+              </span>
             </button>
           </div>
 
@@ -214,11 +216,6 @@ export function FAQPage({ onClose }: FAQPageProps) {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Return to Home Button */}
-        <div className="mb-6">
-          <ReturnToHomeButton onClick={onClose} />
-        </div>
-
         {/* Category Filters */}
         <div className="flex flex-wrap gap-3 mb-8">
           {categories.map((category) => {

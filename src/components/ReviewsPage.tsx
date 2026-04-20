@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Star, ThumbsUp, Image as ImageIcon, Award, TrendingUp, Filter } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface ReviewsPageProps {
   onClose: () => void;
@@ -199,21 +198,21 @@ export function ReviewsPage({ onClose }: ReviewsPageProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <ReturnToHomeButton onClick={onClose} />
-            <div>
-              <h1 className="text-gray-900 dark:text-white">Customer Reviews</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Real feedback from real customers
-              </p>
-            </div>
+          <div>
+            <h1 className="text-gray-900 dark:text-white">Customer Reviews</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Real feedback from real customers
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-            aria-label="Close reviews"
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors group"
+            aria-label="Return to Home"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
+              Return to Home
+            </span>
           </button>
         </div>
       </div>

@@ -1,8 +1,61 @@
 import { Hono } from 'npm:hono';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import * as kv from './kv_store.tsx';
+import { S3Client, GetObjectCommand } from 'npm:@aws-sdk/client-s3';
+import { getSignedUrl } from 'npm:@aws-sdk/s3-request-presigner';
 
 const customerApp = new Hono();
+
+// Helper: Generate signed URLs for S3 images
+async function generateSignedUrl(s3Url: string | null | undefined): Promise<string> {
+  try {
+    // Handle null/undefined URLs
+    if (!s3Url) {
+      console.warn('generateSignedUrl: URL is null or undefined');
+      return '';
+    }
+    
+    // Extract the S3 key from the URL
+    // Format: https://bucket.s3.region.amazonaws.com/key
+    const urlMatch = s3Url.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/);
+    if (!urlMatch) {
+      // Not an S3 URL, return as-is (might be admin photo or other source)
+      return s3Url;
+    }
+    
+    const [, bucket, region, key] = urlMatch;
+    
+    // Get AWS credentials
+    const AWS_ACCESS_KEY_ID = Deno.env.get('AWS_ACCESS_KEY_ID');
+    const AWS_SECRET_ACCESS_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+    
+    if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
+      console.error('AWS credentials not configured');
+      return s3Url; // Return original URL as fallback
+    }
+    
+    // Create S3 client
+    const s3Client = new S3Client({
+      region: region,
+      credentials: {
+        accessKeyId: AWS_ACCESS_KEY_ID,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+      },
+    });
+    
+    // Generate signed URL (expires in 1 hour)
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: decodeURIComponent(key),
+    });
+    
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    return signedUrl;
+  } catch (error) {
+    console.error('Error generating signed URL:', error);
+    return s3Url || ''; // Return original URL as fallback
+  }
+}
 
 let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
@@ -629,31 +682,50 @@ customerApp.get('/make-server-3e3a9cd7/collections', async (c) => {
     
     console.log(`📷 Found ${collections.length} collections from unified system`);
     
-    // Map to the format expected by the frontend
-    const formattedCollections = collections.map((col: any) => ({
-      id: col.id || col.name, // Use name as fallback ID for backward compatibility
-      title: col.name,
-      description: col.description || '',
-      hidden: col.hidden || false,
-      photos: (col.images || []).map((img: any) => ({
-        id: img.id,
-        url: img.url,
-        originalUrl: img.originalUrl || img.url,
-        s3Key: img.s3Key || '',
-        fileName: img.name || img.title || '',
-        uploadDate: img.uploadedAt || img.uploadDate || new Date().toISOString(),
-        // Preserve marketplace metadata
-        photographerId: img.photographerId,
-        photographerName: img.photographerName,
-        isMarketplacePhoto: img.isMarketplacePhoto || false,
-        royaltyRate: img.royaltyRate,
-        title: img.title || img.name || '',
-        description: img.description || '',
-        tags: img.tags || [],
-      })),
-    }));
+    // Map to the format expected by the frontend and generate signed URLs for marketplace photos
+    const formattedCollections = await Promise.all(
+      collections.map(async (col: any) => {
+        // Generate signed URLs for all photos in the collection
+        const photosWithSignedUrls = await Promise.all(
+          (col.images || []).map(async (img: any) => {
+            // Check if this is a marketplace photo (has S3 URL pattern)
+            const url = img.url || img.originalUrl || '';
+            const isS3Url = url.includes('.s3.') && url.includes('.amazonaws.com');
+            
+            // Generate signed URL for S3 photos (marketplace photos)
+            const signedUrl = isS3Url ? await generateSignedUrl(url) : url;
+            
+            return {
+              id: img.id,
+              url: signedUrl, // Use signed URL for marketplace photos
+              originalUrl: img.originalUrl || img.url,
+              s3Key: img.s3Key || '',
+              fileName: img.name || img.title || '',
+              uploadDate: img.uploadedAt || img.uploadDate || new Date().toISOString(),
+              // Preserve marketplace metadata
+              photographerId: img.photographerId,
+              photographerName: img.photographerName,
+              isMarketplacePhoto: img.isMarketplacePhoto || false,
+              royaltyRate: img.royaltyRate,
+              title: img.title || img.name || '',
+              description: img.description || '',
+              tags: img.tags || [],
+            };
+          })
+        );
+        
+        return {
+          id: col.id || col.name, // Use name as fallback ID for backward compatibility
+          title: col.name,
+          description: col.description || '',
+          hidden: col.hidden || false,
+          photos: photosWithSignedUrls,
+        };
+      })
+    );
     
-    console.log(`📷 Returning ${formattedCollections.length} collections with ${formattedCollections.reduce((sum: number, col: any) => sum + col.photos.length, 0)} total photos`);
+    const totalPhotos = formattedCollections.reduce((sum: number, col: any) => sum + col.photos.length, 0);
+    console.log(`📷 Returning ${formattedCollections.length} collections with ${totalPhotos} total photos (with signed URLs)`);
     return c.json(formattedCollections);
   } catch (error: any) {
     console.error('❌ Error fetching collections:', error);
@@ -707,6 +779,74 @@ customerApp.get('/make-server-3e3a9cd7/stock-photos/:collectionName', async (c) 
       error: 'Failed to fetch photos',
       details: error.message
     }, 500);
+  }
+});
+
+// Sign up route - creates new customer account
+customerApp.post('/make-server-3e3a9cd7/signup', async (c) => {
+  try {
+    console.log('📝 POST /signup called');
+    
+    const { email, password, name } = await c.req.json();
+    
+    if (!email || !password || !name) {
+      return c.json({ error: 'Email, password, and name are required' }, 400);
+    }
+    
+    if (password.length < 6) {
+      return c.json({ error: 'Password must be at least 6 characters' }, 400);
+    }
+    
+    const supabase = getSupabaseAdmin();
+    
+    // Create the user account
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: { name },
+      // Automatically confirm the user's email since an email server hasn't been configured
+      email_confirm: true
+    });
+    
+    if (error) {
+      console.error('❌ Failed to create user:', error);
+      return c.json({ error: error.message }, 400);
+    }
+    
+    console.log('✅ User created successfully:', data.user?.id);
+    
+    // Sign in the user to get access token
+    const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (signInError) {
+      console.error('❌ Failed to sign in new user:', signInError);
+      // User was created but auto-signin failed - that's ok, they can manually sign in
+      return c.json({ 
+        success: true,
+        message: 'Account created successfully. Please sign in.',
+        userId: data.user?.id
+      });
+    }
+    
+    console.log('✅ User signed in successfully');
+    
+    // Return the access token so frontend can set the session
+    return c.json({
+      success: true,
+      access_token: sessionData.session?.access_token,
+      refresh_token: sessionData.session?.refresh_token,
+      user: {
+        id: data.user?.id,
+        email: data.user?.email,
+        name: data.user?.user_metadata?.name
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Signup error:', error);
+    return c.json({ error: error.message || 'Failed to create account' }, 500);
   }
 });
 

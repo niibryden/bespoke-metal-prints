@@ -3,7 +3,6 @@ import { X, ImageIcon, ChevronRight, Search, Grid3x3, Grid2x2, List, Printer, Lo
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 // Removed getProxiedImageUrl - using direct S3 URLs now
 
@@ -378,7 +377,6 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
           <div className="flex items-center justify-between mb-4">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <ReturnToHomeButton onClick={onClose} />
               <ChevronRight className="w-4 h-4" />
               <span className="text-gray-700 dark:text-white font-medium">Our Stock Photos</span>
             </div>
@@ -386,11 +384,15 @@ export function StockPhotosPage({ onClose, onSelectImage, onSelectCollection }: 
             {/* Close button */}
             <motion.button
               onClick={onClose}
-              className="p-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Return to Home"
             >
               <X className="w-6 h-6" />
+              <span className="text-sm font-medium hidden sm:inline">
+                Return to Home
+              </span>
             </motion.button>
           </div>
 

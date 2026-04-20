@@ -13,8 +13,14 @@ app.use('*', cors({
 }));
 
 // Helper: Generate signed URLs for S3 images
-async function generateSignedUrl(s3Url: string): Promise<string> {
+async function generateSignedUrl(s3Url: string | null | undefined): Promise<string> {
   try {
+    // Handle null/undefined URLs
+    if (!s3Url) {
+      console.warn('generateSignedUrl: URL is null or undefined');
+      return '';
+    }
+    
     // Extract the S3 key from the URL
     // Format: https://bucket.s3.region.amazonaws.com/key
     const urlMatch = s3Url.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/);
@@ -484,6 +490,7 @@ app.post("/make-server-3e3a9cd7/marketplace/photographer/upload", async (c) => {
       photographerName: profile.displayName,
       s3Url: originalUrl,
       webUrl: webUrl,
+      imageUrl: webUrl || originalUrl, // Use webUrl (optimized) if available, otherwise original
       title: title || 'Untitled',
       description: description || '',
       tags: tags ? tags.split(',').map((t: string) => t.trim()) : [],
@@ -660,9 +667,24 @@ app.get("/make-server-3e3a9cd7/marketplace/photographer/dashboard", async (c) =>
       photoIds.map((id: string) => kv.get(`marketplace:photo:${id}`))
     );
     
-    const approvedPhotos = photos.filter((p: any) => p?.status === 'approved');
-    const pendingPhotos = photos.filter((p: any) => p?.status === 'pending');
-    const rejectedPhotos = photos.filter((p: any) => p?.status === 'rejected');
+    // Generate signed URLs for all photos
+    const photosWithSignedUrls = await Promise.all(
+      photos.map(async (photo: any) => {
+        if (!photo) return null;
+        
+        // Use imageUrl if available, otherwise fallback to webUrl or s3Url
+        const photoUrl = photo.imageUrl || photo.webUrl || photo.s3Url;
+        
+        return {
+          ...photo,
+          imageUrl: await generateSignedUrl(photoUrl),
+        };
+      })
+    );
+    
+    const approvedPhotos = photosWithSignedUrls.filter((p: any) => p?.status === 'approved');
+    const pendingPhotos = photosWithSignedUrls.filter((p: any) => p?.status === 'pending');
+    const rejectedPhotos = photosWithSignedUrls.filter((p: any) => p?.status === 'rejected');
     
     return c.json({ 
       profile,
@@ -950,7 +972,18 @@ app.get("/make-server-3e3a9cd7/marketplace/admin/pending-photos", async (c) => {
       pendingIds.map((id: string) => kv.get(`marketplace:photo:${id}`))
     );
     
-    return c.json({ photos: photos.filter(Boolean) });
+    // Generate signed URLs for all photos
+    const photosWithSignedUrls = await Promise.all(
+      photos.filter(Boolean).map(async (photo: any) => {
+        const photoUrl = photo.imageUrl || photo.webUrl || photo.s3Url;
+        return {
+          ...photo,
+          imageUrl: await generateSignedUrl(photoUrl),
+        };
+      })
+    );
+    
+    return c.json({ photos: photosWithSignedUrls });
   } catch (error: any) {
     console.error('❌ Error fetching pending photos:', error);
     return c.json({ error: error.message }, 500);
@@ -981,7 +1014,18 @@ app.get("/make-server-3e3a9cd7/marketplace/admin/approved-photos", async (c) => 
     const validPhotos = photos.filter(Boolean);
     console.log(`✅ Returning ${validPhotos.length} approved photos`);
     
-    return c.json({ photos: validPhotos });
+    // Generate signed URLs for all photos
+    const photosWithSignedUrls = await Promise.all(
+      validPhotos.map(async (photo: any) => {
+        const photoUrl = photo.imageUrl || photo.webUrl || photo.s3Url;
+        return {
+          ...photo,
+          imageUrl: await generateSignedUrl(photoUrl),
+        };
+      })
+    );
+    
+    return c.json({ photos: photosWithSignedUrls });
   } catch (error: any) {
     console.error('❌ Error fetching approved photos:', error);
     return c.json({ error: error.message }, 500);
@@ -1603,6 +1647,79 @@ app.post("/make-server-3e3a9cd7/marketplace/admin/sync-pending", async (c) => {
   } catch (error: any) {
     console.error('❌ Error syncing pending list:', error);
     return c.json({ error: error.message }, 500);
+  }
+});
+
+// MIGRATION: Add imageUrl field to all existing photos
+app.post("/make-server-3e3a9cd7/marketplace/admin/migrate-image-urls", async (c) => {
+  try {
+    // Check for either Authorization header or X-Admin-Email header
+    const authHeader = c.req.header('Authorization');
+    const adminEmail = c.req.header('X-Admin-Email');
+    
+    if (!authHeader && !adminEmail) {
+      console.log('❌ No authorization provided');
+      return c.json({ error: 'Admin access required' }, 401);
+    }
+    
+    console.log('🔄 Starting migration to add imageUrl field to all photos...');
+    
+    // Get all photo lists with proper array handling
+    const approvedIdsRaw = await kv.get('marketplace:photos:approved');
+    const pendingIdsRaw = await kv.get('marketplace:photos:pending');
+    
+    // Ensure we have arrays
+    const approvedIds = Array.isArray(approvedIdsRaw) ? approvedIdsRaw : [];
+    const pendingIds = Array.isArray(pendingIdsRaw) ? pendingIdsRaw : [];
+    
+    console.log(`📊 Found ${approvedIds.length} approved and ${pendingIds.length} pending photos`);
+    
+    const allPhotoIds = [...new Set([...approvedIds, ...pendingIds])];
+    
+    console.log(`📊 Total unique photos to migrate: ${allPhotoIds.length}`);
+    
+    let updatedCount = 0;
+    let errorCount = 0;
+    let skippedCount = 0;
+    
+    for (const photoId of allPhotoIds) {
+      try {
+        const photo = await kv.get(`marketplace:photo:${photoId}`);
+        if (!photo) {
+          console.warn(`⚠️ Photo ${photoId} not found`);
+          errorCount++;
+          continue;
+        }
+        
+        // Only update if imageUrl doesn't exist
+        if (!photo.imageUrl) {
+          photo.imageUrl = photo.webUrl || photo.s3Url;
+          await kv.set(`marketplace:photo:${photoId}`, photo);
+          updatedCount++;
+          console.log(`✅ Updated photo ${photoId} with imageUrl: ${photo.imageUrl?.substring(0, 50)}...`);
+        } else {
+          skippedCount++;
+          console.log(`⏭️ Skipped photo ${photoId} - imageUrl already exists`);
+        }
+      } catch (err) {
+        console.error(`❌ Error updating photo ${photoId}:`, err);
+        errorCount++;
+      }
+    }
+    
+    console.log(`✅ Migration complete: ${updatedCount} photos updated, ${skippedCount} skipped, ${errorCount} errors`);
+    
+    return c.json({ 
+      success: true,
+      updatedCount,
+      skippedCount,
+      errorCount,
+      totalPhotos: allPhotoIds.length
+    });
+  } catch (error: any) {
+    console.error('❌ Error during migration:', error);
+    console.error('❌ Error stack:', error.stack);
+    return c.json({ error: `Migration failed: ${error.message}` }, 500);
   }
 });
 

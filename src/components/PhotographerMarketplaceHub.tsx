@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Camera, TrendingUp, DollarSign, Users, LogIn, UserPlus } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface PhotographerMarketplaceHubProps {
   onClose: () => void;
@@ -28,9 +27,13 @@ export function PhotographerMarketplaceHub({ onClose, onSignupClick, onLoginClic
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-700 dark:text-white hover:bg-[#ff6b35] hover:text-black transition-colors"
+            aria-label="Return to Home"
           >
             <X className="w-6 h-6" />
+            <span className="text-sm font-medium hidden sm:inline">
+              Return to Home
+            </span>
           </button>
         </div>
       </div>

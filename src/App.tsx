@@ -78,6 +78,25 @@ export default function App() {
   const [photographerView, setPhotographerView] = useState<'hub' | 'signup' | 'login' | 'dashboard'>('hub');
   const [selectedStockPhoto, setSelectedStockPhoto] = useState<string | null>(null);
 
+  // Suppress Supabase "session missing" console errors
+  useEffect(() => {
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      // Suppress "Auth session missing!" errors - this is normal when not logged in
+      const message = args[0]?.toString() || '';
+      if (message.includes('Auth session missing') || 
+          message.includes('session missing')) {
+        return; // Suppress this error
+      }
+      // Pass all other errors through
+      originalConsoleError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalConsoleError;
+    };
+  }, []);
+
   // Handle URL hash navigation
   useEffect(() => {
     const handleHashChange = () => {
@@ -216,23 +235,26 @@ export default function App() {
         <CartProvider>
           <SEO {...defaultSEO} />
           <ScrollToTop />
-          <Navigation
-            onGoHome={() => navigateToPage('home')}
-            onStockPhotosClick={() => navigateToPage('stock-photos')}
-            onAdminClick={() => navigateToPage('admin')}
-            onTrackingClick={() => navigateToPage('tracking')}
-            onRefundPolicyClick={() => navigateToPage('refund-policy')}
-            onShippingPolicyClick={() => navigateToPage('shipping-policy')}
-            onPrivacyPolicyClick={() => navigateToPage('privacy-policy')}
-            onProductsClick={() => navigateToPage('products')}
-            onFAQClick={() => navigateToPage('faq')}
-            onAboutClick={() => navigateToPage('complete-guide')}
-            onSizeGuideClick={() => navigateToPage('size-guide')}
-            onHDMetalPrintGuideClick={() => navigateToPage('hd-metal-print-guide')}
-            onCareInstructionsClick={() => navigateToPage('care-instructions')}
-            onReviewsClick={() => navigateToPage('reviews')}
-            onCartCheckoutClick={() => navigateToPage('cart-checkout')}
-          />
+          {/* Hide navigation on admin and photographer dashboard pages */}
+          {currentPage !== 'admin' && currentPage !== 'photographer' && (
+            <Navigation
+              onGoHome={() => navigateToPage('home')}
+              onStockPhotosClick={() => navigateToPage('stock-photos')}
+              onAdminClick={() => navigateToPage('admin')}
+              onTrackingClick={() => navigateToPage('tracking')}
+              onRefundPolicyClick={() => navigateToPage('refund-policy')}
+              onShippingPolicyClick={() => navigateToPage('shipping-policy')}
+              onPrivacyPolicyClick={() => navigateToPage('privacy-policy')}
+              onProductsClick={() => navigateToPage('products')}
+              onFAQClick={() => navigateToPage('faq')}
+              onAboutClick={() => navigateToPage('complete-guide')}
+              onSizeGuideClick={() => navigateToPage('size-guide')}
+              onHDMetalPrintGuideClick={() => navigateToPage('hd-metal-print-guide')}
+              onCareInstructionsClick={() => navigateToPage('care-instructions')}
+              onReviewsClick={() => navigateToPage('reviews')}
+              onCartCheckoutClick={() => navigateToPage('cart-checkout')}
+            />
+          )}
           <main className="min-h-screen">
             {currentPage === 'home' && (
               <>

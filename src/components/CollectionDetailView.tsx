@@ -1,10 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Home, ChevronRight, Search, Grid3x3, Grid2x2, Image as ImageIcon, Sparkles, Zap, Clock, CheckCircle, Printer, Loader2 } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { X, ChevronRight, Search, Loader2, Printer, Image as ImageIcon } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { getServerUrl } from '../utils/serverUrl';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 // Removed getProxiedImageUrl - using direct S3 URLs now
 
 interface CollectionDetailViewProps {
@@ -184,7 +182,6 @@ export function CollectionDetailView({
             <div className="flex items-center justify-between mb-4">
               {/* Breadcrumb */}
               <div className="flex items-center gap-2 text-sm text-gray-400 [data-theme='light']_&:text-gray-500">
-                <ReturnToHomeButton />
                 <ChevronRight className="w-4 h-4" />
                 <button 
                   onClick={onBack}

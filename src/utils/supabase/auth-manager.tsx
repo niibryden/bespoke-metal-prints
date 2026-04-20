@@ -28,12 +28,21 @@ export async function initializeAuthSubscription(callback?: (user: any, event: s
   
   // Get initial session
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    // Suppress "session missing" errors - this is expected when not logged in
+    if (error && !error.message?.includes('session missing')) {
+      console.error('Error getting initial session:', error);
+    }
+    
     if (callback) {
       callback(session?.user ?? null, 'INITIAL_SESSION');
     }
-  } catch (error) {
-    console.error('Error getting initial session:', error);
+  } catch (error: any) {
+    // Suppress "session missing" errors
+    if (!error?.message?.includes('session missing')) {
+      console.error('Error getting initial session:', error);
+    }
   }
 
   // Set up single global auth listener

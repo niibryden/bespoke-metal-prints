@@ -1,6 +1,5 @@
 import { motion } from 'motion/react';
-import { ArrowLeft, Sparkles, Shield, Droplets, Star, Package, Palette, Frame } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
+import { ArrowLeft, Sparkles, Shield, Droplets, Star, Package, Palette, Frame, X } from 'lucide-react';
 
 interface CompleteGuidePageProps {
   onClose: () => void;
@@ -14,10 +13,19 @@ export function CompleteGuidePage({ onClose }: CompleteGuidePageProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      {/* Return to Home Button */}
-      <ReturnToHomeButton onClick={onClose} />
-
       <div className="container mx-auto px-6 py-16 max-w-4xl">
+        {/* Back to Home Button - Fixed Position */}
+        <button
+          onClick={onClose}
+          className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#2a2a2a] rounded-full shadow-lg transition-colors border border-gray-200 dark:border-[#2a2a2a] group"
+          aria-label="Return to Home"
+        >
+          <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
+            Return to Home
+          </span>
+        </button>
+
         {/* Header */}
         <motion.div
           className="text-center mb-16"

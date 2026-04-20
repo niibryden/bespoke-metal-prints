@@ -4,7 +4,6 @@ import { X, Package, MapPin, CreditCard, Trash2, Plus, Loader2, Edit2, RotateCcw
 import { getSupabaseClient } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface AccountPageProps {
   onClose: () => void;
@@ -354,11 +353,6 @@ export function AccountPage({ onClose, onSignOut, onReorder }: AccountPageProps)
 
           {/* Content */}
           <div className="p-6">
-            {/* Return to Home Button */}
-            <div className="mb-6">
-              <ReturnToHomeButton onClick={onClose} />
-            </div>
-
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 text-[#ff6b35] animate-spin" />

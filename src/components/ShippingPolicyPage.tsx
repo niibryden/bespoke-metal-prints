@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Truck, Package, MapPin, Clock, DollarSign, AlertCircle, ShieldCheck } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface ShippingPolicyPageProps {
   onBack: () => void;
@@ -22,9 +21,6 @@ export function ShippingPolicyPage({ onBack, onTrackingClick }: ShippingPolicyPa
   return (
     <div className={`min-h-screen bg-white dark:bg-[#0a0a0a] ${bannerDismissed ? 'pt-24' : 'pt-32'} pb-16 transition-all duration-300`}>
       <div className="container mx-auto px-4 max-w-4xl">
-        {/* Back Button */}
-        <ReturnToHomeButton onClick={onBack} className="mb-8" />
-
         {/* Header */}
         <motion.div
           className="text-center mb-12"

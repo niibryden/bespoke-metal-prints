@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Shield, ArrowLeft, CheckCircle } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface AdminBootstrapProps {
   onBack: () => void;
@@ -82,10 +81,14 @@ export function AdminBootstrap({ onBack, onSuccess }: AdminBootstrapProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] flex items-center justify-center p-4">
-      {/* Return to Home - top left */}
-      <div className="fixed top-6 left-6 z-20">
-        <ReturnToHomeButton onClick={onBack} />
-      </div>
+      {/* Back button */}
+      <button
+        onClick={onBack}
+        className="fixed top-6 left-6 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-[#ff6b35] transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span className="text-sm font-medium">Back to Home</span>
+      </button>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

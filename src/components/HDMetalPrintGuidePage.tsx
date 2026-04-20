@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Sparkles, Shield, Droplets, Sun, Zap, Award, CheckCircle, ArrowRight } from 'lucide-react';
-import { ReturnToHomeButton } from './ReturnToHomeButton';
 
 interface HDMetalPrintGuidePageProps {
   onClose: () => void;
@@ -139,14 +138,11 @@ export function HDMetalPrintGuidePage({ onClose }: HDMetalPrintGuidePageProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <ReturnToHomeButton onClick={onClose} />
-            <div>
-              <h1 className="text-gray-900 dark:text-white">What are HD Metal Prints?</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Understanding the science behind premium metal prints
-              </p>
-            </div>
+          <div>
+            <h1 className="text-gray-900 dark:text-white">What are HD Metal Prints?</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Understanding the science behind premium metal prints
+            </p>
           </div>
           <button
             onClick={onClose}
